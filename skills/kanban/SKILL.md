@@ -30,7 +30,7 @@ Repeat continuously until no more ready tasks:
    - If `{ "deleted": true }`, run `git reset --hard HEAD` and go to step 1
    - If `{ "timeout": true }`, call `kanban_wait_for_reply` again
 6. **Final check**: Before completing, call `kanban_check_comments` one last time to ensure no new feedback was left during your work
-7. **Add summary**: Add a brief comment summarizing what you did using `kanban_add_comment` (e.g., "Added X feature to Y, updated Z files")
+7. **Add summary** (REQUIRED): ALWAYS add a completion summary using `kanban_add_comment` before completing. Example: "✅ Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
 8. **Complete**: Call `kanban_complete_task`, then commit changes
 9. **Repeat** from step 1
 
@@ -43,12 +43,20 @@ Repeat continuously until no more ready tasks:
 - If no ready tasks, inform user and stop
 - If user asks to "defer" or "skip" a task, move it to **backlog** (not ready) so it won't be picked up again automatically
 
+## Paused State
+
+If `kanban_watch` or `kanban_get_tasks` indicates the project is paused:
+- The user has intentionally paused task processing
+- Do NOT attempt to pick up new tasks
+- Inform the user that the project is paused and they need to click "Resume" in the kanban board UI
+- Wait for them to resume before continuing the task loop
+
 ## Action Comments
 
 User can trigger actions via the UI that leave special comments. When checking comments, look for these patterns:
 
 - `[ACTION:RESET]` - User wants to reset all changes. Run `git reset --hard HEAD` and start the task fresh from the beginning.
-- `[ACTION:CANCEL]` - User wants to cancel the task. Run `git reset --hard HEAD` and move the task back to ready status using the move API.
+- `[ACTION:CANCEL]` - User wants to cancel the task. Run `git reset --hard HEAD` and move the task to backlog status using the move API.
 
 ## Note
 

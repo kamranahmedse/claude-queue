@@ -3,6 +3,7 @@ export interface Project {
   path: string;
   name: string;
   paused: boolean;
+  claude_last_seen: string | null;
   created_at: string;
 }
 

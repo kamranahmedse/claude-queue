@@ -53,4 +53,9 @@ export function initSchema(db: Database.Database) {
   if (!hasSeenColumn) {
     db.exec("ALTER TABLE comments ADD COLUMN seen INTEGER DEFAULT 0");
   }
+
+  const hasClaudeLastSeen = projectColumns.some((col) => col.name === "claude_last_seen");
+  if (!hasClaudeLastSeen) {
+    db.exec("ALTER TABLE projects ADD COLUMN claude_last_seen DATETIME");
+  }
 }

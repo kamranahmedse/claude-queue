@@ -1,9 +1,21 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, CheckCircle, XCircle, AlertCircle, Server, Bot, FolderKanban, Copy, Check } from "lucide-react";
+import { X, CheckCircle, XCircle, AlertCircle, Server, Bot, FolderKanban, Copy, Check, AlertTriangle } from "lucide-react";
 import { listProjectsOptions } from "~/queries/projects";
 import { listTasksOptions } from "~/queries/tasks";
 import type { Project } from "~/types";
+
+const HEARTBEAT_TIMEOUT_MS = 30000;
+const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
+
+function isClaudeConnected(project: Project): boolean {
+  if (!project.claude_last_seen) {
+    return false;
+  }
+  const lastSeen = new Date(project.claude_last_seen).getTime();
+  const now = Date.now();
+  return now - lastSeen < HEARTBEAT_TIMEOUT_MS;
+}
 
 interface StatusPanelProps {
   project: Project | null;
@@ -16,7 +28,7 @@ export function StatusPanel(props: StatusPanelProps) {
   const [copied, setCopied] = useState(false);
 
   const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useQuery(listProjectsOptions());
-  const { data: tasks = [], isLoading: tasksLoading, error: tasksError } = useQuery({
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     ...listTasksOptions(project?.id || ""),
     enabled: !!project,
   });
@@ -32,6 +44,12 @@ export function StatusPanel(props: StatusPanelProps) {
     if (project.paused) {
       return { status: "Paused", color: "text-yellow-400", icon: AlertCircle };
     }
+
+    const connected = isClaudeConnected(project);
+
+    if (!connected) {
+      return { status: "Not running", color: "text-yellow-400", icon: AlertTriangle };
+    }
     if (inProgressTask) {
       if (inProgressTask.blocked) {
         return { status: "Blocked - waiting for response", color: "text-red-400", icon: AlertCircle };
@@ -39,9 +57,9 @@ export function StatusPanel(props: StatusPanelProps) {
       return { status: "Working on task", color: "text-green-400", icon: CheckCircle };
     }
     if (readyTasks.length > 0) {
-      return { status: `${readyTasks.length} task(s) ready for pickup`, color: "text-blue-400", icon: AlertCircle };
+      return { status: `${readyTasks.length} task(s) ready`, color: "text-blue-400", icon: CheckCircle };
     }
-    return { status: "Idle - no tasks ready", color: "text-zinc-500", icon: XCircle };
+    return { status: "Watching", color: "text-green-400", icon: CheckCircle };
   };
 
   const claudeStatus = getClaudeStatus();
@@ -160,13 +178,13 @@ export function StatusPanel(props: StatusPanelProps) {
                   {project && (
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(`/kanban ${project.id}`);
+                        navigator.clipboard.writeText(`${SKILL_COMMAND} ${project.id}`);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
                       className="mt-2 w-full flex items-center justify-between gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors group"
                     >
-                      <code className="text-xs text-orange-400 font-mono">/kanban {project.id}</code>
+                      <code className="text-xs text-orange-400 font-mono">{SKILL_COMMAND} {project.id}</code>
                       {copied ? (
                         <Check className="w-3.5 h-3.5 text-green-400" />
                       ) : (

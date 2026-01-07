@@ -144,8 +144,10 @@ Repeat continuously until no more ready tasks:
    - Call \`kanban_wait_for_reply\` to wait for response
    - If \`{ "deleted": true }\`, run \`git reset --hard HEAD\` and go to step 1
    - If \`{ "timeout": true }\`, call \`kanban_wait_for_reply\` again
-6. **Complete**: Call \`kanban_complete_task\`, then commit changes
-7. **Repeat** from step 1
+6. **Final check**: Before completing, call \`kanban_check_comments\` one last time to ensure no new feedback was left during your work
+7. **Add summary** (REQUIRED): ALWAYS add a completion summary using \`kanban_add_comment\` before completing. Example: "Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
+8. **Complete**: Call \`kanban_complete_task\`, then commit changes
+9. **Repeat** from step 1
 
 ## Rules
 
@@ -161,7 +163,7 @@ Repeat continuously until no more ready tasks:
 User can trigger actions via the UI that leave special comments. When checking comments, look for these patterns:
 
 - \`[ACTION:RESET]\` - User wants to reset all changes. Run \`git reset --hard HEAD\` and start the task fresh from the beginning.
-- \`[ACTION:CANCEL]\` - User wants to cancel the task. Run \`git reset --hard HEAD\` and move the task back to ready status using the move API.
+- \`[ACTION:CANCEL]\` - User wants to cancel the task. Run \`git reset --hard HEAD\` and move the task to backlog status using the move API.
 
 ## Note
 

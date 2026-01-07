@@ -226,13 +226,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case "kanban_watch": {
         const projectId = args?.projectId as string;
-        const project = await httpGet<Project>(`/api/projects/${projectId}`);
+        const project = await httpGet<Project>(`/api/projects/${projectId}?heartbeat=true`);
+
+        const pausedWarning = project.paused
+          ? `\n\n⚠️ WARNING: This project is currently PAUSED. Claude will not pick up new tasks until resumed. The user can click "Resume" in the kanban board UI to allow task processing.`
+          : "";
 
         return {
           content: [
             {
               type: "text",
-              text: `Connected to project "${project.name}" (${project.id}).
+              text: `Connected to project "${project.name}" (${project.id}).${pausedWarning}
 
 You are now watching this kanban board. Follow this loop:
 1. Call kanban_get_tasks with status "ready" to find available tasks
@@ -255,7 +259,7 @@ If kanban_wait_for_reply returns { deleted: true }, discard changes and pick the
         const projectId = args?.projectId as string;
         const status = args?.status as string | undefined;
 
-        const project = await httpGet<Project>(`/api/projects/${projectId}`);
+        const project = await httpGet<Project>(`/api/projects/${projectId}?heartbeat=true`);
 
         if (project.paused) {
           return {
@@ -383,6 +387,7 @@ If kanban_wait_for_reply returns { deleted: true }, discard changes and pick the
           }
 
           await httpPatch(`/api/tasks/${taskId}`, { blocked: false });
+          await httpPatch(`/api/comments/task/${taskId}/mark-seen`, {});
 
           return {
             content: [

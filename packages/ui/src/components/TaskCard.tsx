@@ -48,7 +48,7 @@ export function TaskCard(props: TaskCardProps) {
   };
 
   const handleConfirmCancel = () => {
-    addComment.mutate("[ACTION:CANCEL] Please stop working on this task and move it back to ready.", {
+    addComment.mutate("[ACTION:CANCEL] Please stop working on this task and move it to backlog.", {
       onSuccess: () => setShowCancelConfirm(false),
     });
   };
@@ -64,11 +64,12 @@ export function TaskCard(props: TaskCardProps) {
         p-3 rounded-lg border transition-colors
         ${isLocked ? "cursor-default" : "cursor-pointer"}
         ${isDragging ? "opacity-50" : ""}
+        ${isLocked && !task.blocked ? "in-progress-stripes" : ""}
         ${
           task.blocked
             ? "bg-red-900/20 border-red-500/50 hover:border-red-500"
             : isLocked
-            ? "bg-orange-900/10 border-orange-500/30"
+            ? "bg-zinc-900 border-orange-500/30"
             : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
         }
       `}
@@ -170,7 +171,7 @@ export function TaskCard(props: TaskCardProps) {
               <ul className="list-disc list-inside text-zinc-500">
                 <li>Stop working on this task</li>
                 <li>Discard all uncommitted code changes</li>
-                <li>Move the task back to Ready</li>
+                <li>Move the task to Backlog</li>
               </ul>
             </div>
             <div className="flex items-center justify-end gap-3">

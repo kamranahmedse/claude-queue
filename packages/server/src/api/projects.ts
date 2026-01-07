@@ -21,6 +21,13 @@ router.get("/:id", (req, res) => {
     return;
   }
 
+  if (req.query.heartbeat === "true") {
+    db.prepare("UPDATE projects SET claude_last_seen = CURRENT_TIMESTAMP WHERE id = ?").run(req.params.id);
+    const updated = db.prepare("SELECT * FROM projects WHERE id = ?").get(req.params.id) as Project;
+    res.json(updated);
+    return;
+  }
+
   res.json(project);
 });
 
@@ -85,6 +92,21 @@ router.post("/:id/resume", (req, res) => {
   }
 
   db.prepare("UPDATE projects SET paused = 0 WHERE id = ?").run(req.params.id);
+
+  const updated = db.prepare("SELECT * FROM projects WHERE id = ?").get(req.params.id) as Project;
+  res.json(updated);
+});
+
+router.post("/:id/heartbeat", (req, res) => {
+  const db = getDb();
+  const project = db.prepare("SELECT * FROM projects WHERE id = ?").get(req.params.id) as Project | undefined;
+
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  db.prepare("UPDATE projects SET claude_last_seen = CURRENT_TIMESTAMP WHERE id = ?").run(req.params.id);
 
   const updated = db.prepare("SELECT * FROM projects WHERE id = ?").get(req.params.id) as Project;
   res.json(updated);

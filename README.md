@@ -196,6 +196,33 @@ Claude will:
 6. Complete tasks and auto-commit changes
 7. Repeat until no more Ready tasks
 
+## Claude Status Indicator
+
+The UI shows Claude's connection status in the header. The status is based on **heartbeat tracking** - Claude sends a heartbeat every time it checks for tasks, so the UI knows if Claude is actively watching.
+
+| Status | Icon | Meaning |
+|--------|------|---------|
+| **Start Claude** | ⚠️ Yellow | Claude is not running. Run `/kanban <project-id>` to start. |
+| **Working** | 🔄 Green | Claude is actively working on a task. |
+| **Blocked** | 🔴 Red | Claude is waiting for your response. Click the task to reply. |
+| **Ready** | 🔵 Blue | Claude is connected and tasks are waiting to be picked up. |
+| **Watching** | 🟢 Green | Claude is connected and watching for new tasks. |
+| **Paused** | ⏸️ Gray | You've paused Claude. Click Resume to continue. |
+
+### Pause After Task / Resume
+
+Use the **Pause After Task** button to prevent Claude from picking up new tasks after completing the current one. This is useful when you want to:
+- Review Claude's work before it continues
+- Make manual changes without Claude interfering
+- Take a break from autonomous task processing
+
+The button only appears when Claude is connected. If Claude isn't running, there's nothing to pause.
+
+When paused:
+- Claude will finish any task currently in progress
+- Claude will not pick up new tasks from the Ready column
+- Click **Resume** to allow Claude to continue
+
 ## Skills
 
 The `/kanban` skill is automatically installed when you run `npx claude-kanban` for the first time. No manual setup required!
@@ -247,13 +274,17 @@ make uninstall-mcp    # Remove MCP configs
 
 | Tool | Description |
 |------|-------------|
-| `kanban_watch` | Connect to a project board |
-| `kanban_get_tasks` | List tasks, optionally by status |
+| `kanban_watch` | Connect to a project board (sends heartbeat, warns if paused) |
+| `kanban_get_tasks` | List tasks, optionally by status (sends heartbeat, returns paused status) |
 | `kanban_claim_task` | Move a task to in_progress |
 | `kanban_update_activity` | Update current activity on a task |
 | `kanban_set_blocked` | Mark task blocked and ask a question |
 | `kanban_wait_for_reply` | Wait for user to reply to question |
 | `kanban_complete_task` | Move task to done |
+| `kanban_check_comments` | Check for new user comments on a task |
+| `kanban_add_comment` | Add a comment to a task |
+
+**Heartbeat**: The `kanban_watch` and `kanban_get_tasks` tools automatically send a heartbeat to the server, which updates the `claude_last_seen` timestamp. The UI uses this to determine if Claude is actively connected (within the last 30 seconds).
 
 ## Board Columns
 
@@ -275,9 +306,12 @@ make uninstall-mcp    # Remove MCP configs
 ### Projects
 
 - `GET /api/projects` - List all projects
-- `GET /api/projects/:id` - Get project by ID
+- `GET /api/projects/:id` - Get project by ID (add `?heartbeat=true` to update Claude's last seen timestamp)
 - `POST /api/projects` - Create project
 - `DELETE /api/projects/:id` - Delete project
+- `POST /api/projects/:id/pause` - Pause project (prevent Claude from picking up tasks)
+- `POST /api/projects/:id/resume` - Resume project (allow Claude to pick up tasks)
+- `POST /api/projects/:id/heartbeat` - Update Claude's last seen timestamp
 
 ### Tasks
 
