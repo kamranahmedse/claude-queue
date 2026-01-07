@@ -38,6 +38,7 @@ export function initSchema(db: Database.Database) {
       task_id TEXT NOT NULL,
       author TEXT NOT NULL,
       content TEXT NOT NULL,
+      seen INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     );
@@ -46,4 +47,10 @@ export function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     CREATE INDEX IF NOT EXISTS idx_comments_task_id ON comments(task_id);
   `);
+
+  const commentColumns = db.prepare("PRAGMA table_info(comments)").all() as { name: string }[];
+  const hasSeenColumn = commentColumns.some((col) => col.name === "seen");
+  if (!hasSeenColumn) {
+    db.exec("ALTER TABLE comments ADD COLUMN seen INTEGER DEFAULT 0");
+  }
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Trash2, Bot, User, Send } from "lucide-react";
-import { taskDetailsOptions, useAddComment, useDeleteTask } from "~/queries/tasks";
+import { X, Trash2, Bot, User, Send, Pencil, Check, Eye } from "lucide-react";
+import { taskDetailsOptions, useAddComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
 import type { Task } from "~/types";
 
 interface TaskDetailProps {
@@ -14,10 +14,16 @@ export function TaskDetail(props: TaskDetailProps) {
 
   const [comment, setComment] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [editDescription, setEditDescription] = useState(task.description || "");
 
   const { data: taskDetails } = useQuery(taskDetailsOptions(task.id));
   const addComment = useAddComment(task.id);
   const deleteTask = useDeleteTask();
+  const updateTask = useUpdateTask();
+
+  const canEdit = task.status !== "in_progress";
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +39,29 @@ export function TaskDetail(props: TaskDetailProps) {
     deleteTask.mutate(task.id, {
       onSuccess: () => onClose(),
     });
+  };
+
+  const handleStartEdit = () => {
+    setEditTitle(task.title);
+    setEditDescription(task.description || "");
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle) {
+      return;
+    }
+    updateTask.mutate(
+      {
+        taskId: task.id,
+        title: trimmedTitle,
+        description: editDescription.trim() || undefined,
+      },
+      {
+        onSuccess: () => setIsEditing(false),
+      }
+    );
   };
 
   const formatTime = (dateStr: string) => {
@@ -64,26 +93,68 @@ export function TaskDetail(props: TaskDetailProps) {
       />
       <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-zinc-950 border-l border-zinc-800 flex flex-col">
         <div className="flex items-start justify-between p-4 border-b border-zinc-800">
-          <h2 className="text-sm font-medium text-zinc-200 pr-4">
-            {task.title}
-          </h2>
-          <button
-            onClick={onClose}
-            className="shrink-0 p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="flex-1 mr-2 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm font-medium text-zinc-200 focus:outline-none focus:border-zinc-600"
+              autoFocus
+            />
+          ) : (
+            <h2 className="text-sm font-medium text-zinc-200 pr-4">
+              {task.title}
+            </h2>
+          )}
+          <div className="flex items-center gap-1 shrink-0">
+            {canEdit && !isEditing && (
+              <button
+                onClick={handleStartEdit}
+                className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                title="Edit task"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+            {isEditing && (
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editTitle.trim() || updateTask.isPending}
+                className="p-1 text-green-500 hover:text-green-400 hover:bg-zinc-800 rounded transition-colors disabled:opacity-50"
+                title="Save changes"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={isEditing ? () => setIsEditing(false) : onClose}
+              className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {task.description && (
+          {isEditing ? (
+            <div>
+              <h3 className="text-xs text-zinc-500 mb-2">Description</h3>
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Add a description..."
+                rows={4}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 resize-none"
+              />
+            </div>
+          ) : task.description ? (
             <div>
               <h3 className="text-xs text-zinc-500 mb-2">Description</h3>
               <p className="text-sm text-zinc-300 whitespace-pre-wrap">
                 {task.description}
               </p>
             </div>
-          )}
+          ) : null}
 
           <div className="flex items-center gap-4 text-xs">
             <div>
@@ -126,6 +197,11 @@ export function TaskDetail(props: TaskDetailProps) {
                     <span className="text-xs text-zinc-600">
                       {formatTime(c.created_at)}
                     </span>
+                    {c.author === "user" && c.seen && (
+                      <span className="flex items-center gap-1 text-xs text-green-500" title="Claude has seen this comment">
+                        <Eye className="w-3 h-3" />
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-zinc-300 whitespace-pre-wrap">
                     {c.content}

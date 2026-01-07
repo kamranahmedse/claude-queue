@@ -198,6 +198,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["taskId"],
       },
     },
+    {
+      name: "kanban_add_comment",
+      description: "Add a comment to a task. Use this to leave summaries or notes.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          taskId: {
+            type: "string",
+            description: "Task ID",
+          },
+          content: {
+            type: "string",
+            description: "Comment content",
+          },
+        },
+        required: ["taskId", "content"],
+      },
+    },
   ],
 }));
 
@@ -416,11 +434,17 @@ If kanban_wait_for_reply returns { deleted: true }, discard changes and pick the
           task_id: string;
           author: string;
           content: string;
+          seen: boolean;
           created_at: string;
         }
 
         const comments = await httpGet<Comment[]>(url);
         const userComments = comments.filter((c) => c.author === "user");
+        const unseenComments = userComments.filter((c) => !c.seen);
+
+        if (unseenComments.length > 0) {
+          await httpPatch(`/api/comments/task/${taskId}/mark-seen`, {});
+        }
 
         if (userComments.length === 0) {
           return {
@@ -439,9 +463,28 @@ If kanban_wait_for_reply returns { deleted: true }, discard changes and pick the
               type: "text",
               text: JSON.stringify({
                 comments: userComments,
-                hasNewComments: true,
+                hasNewComments: unseenComments.length > 0,
                 latestTimestamp: userComments[userComments.length - 1].created_at,
               }),
+            },
+          ],
+        };
+      }
+
+      case "kanban_add_comment": {
+        const taskId = args?.taskId as string;
+        const content = args?.content as string;
+
+        await httpPost(`/api/comments/task/${taskId}`, {
+          author: "claude",
+          content,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Comment added",
             },
           ],
         };

@@ -29,8 +29,10 @@ Repeat continuously until no more ready tasks:
    - Call `kanban_wait_for_reply` to wait for response
    - If `{ "deleted": true }`, run `git reset --hard HEAD` and go to step 1
    - If `{ "timeout": true }`, call `kanban_wait_for_reply` again
-6. **Complete**: Call `kanban_complete_task`, then commit changes
-7. **Repeat** from step 1
+6. **Final check**: Before completing, call `kanban_check_comments` one last time to ensure no new feedback was left during your work
+7. **Add summary**: Add a brief comment summarizing what you did using `kanban_add_comment` (e.g., "Added X feature to Y, updated Z files")
+8. **Complete**: Call `kanban_complete_task`, then commit changes
+9. **Repeat** from step 1
 
 ## Rules
 

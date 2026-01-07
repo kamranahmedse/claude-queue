@@ -26,6 +26,7 @@ export interface Comment {
   task_id: string;
   author: "user" | "claude";
   content: string;
+  seen: boolean;
   created_at: string;
 }
 

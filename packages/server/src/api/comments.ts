@@ -5,6 +5,13 @@ import type { Comment } from "../types.js";
 
 const router = Router();
 
+function rowToComment(row: any): Comment {
+  return {
+    ...row,
+    seen: Boolean(row.seen),
+  };
+}
+
 router.get("/task/:taskId", (req, res) => {
   const db = getDb();
   const { since } = req.query;
@@ -19,8 +26,8 @@ router.get("/task/:taskId", (req, res) => {
 
   query += " ORDER BY created_at ASC";
 
-  const comments = db.prepare(query).all(...params) as Comment[];
-  res.json(comments);
+  const comments = db.prepare(query).all(...params) as any[];
+  res.json(comments.map(rowToComment));
 });
 
 router.post("/task/:taskId", (req, res) => {
@@ -51,8 +58,35 @@ router.post("/task/:taskId", (req, res) => {
     VALUES (?, ?, ?, ?)
   `).run(id, taskId, author, content);
 
-  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(id) as Comment;
-  res.status(201).json(comment);
+  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(id) as any;
+  res.status(201).json(rowToComment(comment));
+});
+
+router.patch("/:commentId/seen", (req, res) => {
+  const db = getDb();
+  const commentId = req.params.commentId;
+
+  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as any | undefined;
+
+  if (!comment) {
+    res.status(404).json({ error: "Comment not found" });
+    return;
+  }
+
+  db.prepare("UPDATE comments SET seen = 1 WHERE id = ?").run(commentId);
+
+  const updated = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as any;
+  res.json(rowToComment(updated));
+});
+
+router.patch("/task/:taskId/mark-seen", (req, res) => {
+  const db = getDb();
+  const taskId = req.params.taskId;
+
+  db.prepare("UPDATE comments SET seen = 1 WHERE task_id = ? AND author = 'user' AND seen = 0").run(taskId);
+
+  const comments = db.prepare("SELECT * FROM comments WHERE task_id = ? ORDER BY created_at ASC").all(taskId) as any[];
+  res.json(comments.map(rowToComment));
 });
 
 router.get("/task/:taskId/wait-for-reply", async (req, res) => {

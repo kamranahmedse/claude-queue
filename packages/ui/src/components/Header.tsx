@@ -1,6 +1,9 @@
 import { Copy, Check, Pause, Play, Terminal } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { usePauseProject, useResumeProject } from "~/queries/projects";
+import { listTasksOptions } from "~/queries/tasks";
+import { ClaudeStatus } from "./ClaudeStatus";
 import type { Project } from "~/types";
 
 interface HeaderProps {
@@ -17,6 +20,12 @@ export function Header(props: HeaderProps) {
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
   const pauseProject = usePauseProject();
   const resumeProject = useResumeProject();
+
+  const { data: tasks = [] } = useQuery({
+    ...listTasksOptions(project?.id || ""),
+    enabled: !!project,
+    refetchInterval: 2000,
+  });
 
   const handleCopy = () => {
     if (!project) {
@@ -67,6 +76,7 @@ export function Header(props: HeaderProps) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <ClaudeStatus project={project} tasks={tasks} />
           <button
             onClick={onLogsClick}
             className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
