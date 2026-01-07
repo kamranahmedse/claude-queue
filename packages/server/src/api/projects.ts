@@ -60,4 +60,34 @@ router.delete("/:id", (req, res) => {
   res.json({ success: true });
 });
 
+router.post("/:id/pause", (req, res) => {
+  const db = getDb();
+  const project = db.prepare("SELECT * FROM projects WHERE id = ?").get(req.params.id) as Project | undefined;
+
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  db.prepare("UPDATE projects SET paused = 1 WHERE id = ?").run(req.params.id);
+
+  const updated = db.prepare("SELECT * FROM projects WHERE id = ?").get(req.params.id) as Project;
+  res.json(updated);
+});
+
+router.post("/:id/resume", (req, res) => {
+  const db = getDb();
+  const project = db.prepare("SELECT * FROM projects WHERE id = ?").get(req.params.id) as Project | undefined;
+
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  db.prepare("UPDATE projects SET paused = 0 WHERE id = ?").run(req.params.id);
+
+  const updated = db.prepare("SELECT * FROM projects WHERE id = ?").get(req.params.id) as Project;
+  res.json(updated);
+});
+
 export default router;

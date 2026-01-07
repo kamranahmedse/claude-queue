@@ -8,7 +8,9 @@ import projectsRouter from "./api/projects.js";
 import tasksRouter from "./api/tasks.js";
 import commentsRouter from "./api/comments.js";
 import healthRouter from "./api/health.js";
+import logsRouter from "./api/logs.js";
 import { closeDb } from "./db/index.js";
+import { log, logRequest } from "./logger.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -18,9 +20,23 @@ export function createServer(port = 3333) {
   app.use(cors());
   app.use(express.json());
 
+  // Request logging middleware
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      // Skip logging for health checks and SSE streams
+      if (req.path !== "/health" && req.path !== "/api/health" && req.path !== "/api/logs/stream") {
+        logRequest(req.method, req.path, res.statusCode, duration);
+      }
+    });
+    next();
+  });
+
   app.use("/api/projects", projectsRouter);
   app.use("/api/tasks", tasksRouter);
   app.use("/api/comments", commentsRouter);
+  app.use("/api/logs", logsRouter);
   app.use("/health", healthRouter);
 
   const uiPath = join(__dirname, "../../ui/dist");
@@ -32,11 +48,11 @@ export function createServer(port = 3333) {
   }
 
   const server = app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+    log(`Server running on http://localhost:${port}`);
   });
 
   const shutdown = () => {
-    console.log("\nShutting down...");
+    log("Shutting down...");
     server.close(() => {
       closeDb();
       process.exit(0);

@@ -4,9 +4,11 @@ import { Toaster } from "sonner";
 import { listProjectsOptions } from "~/queries/projects";
 import { Header } from "~/components/Header";
 import { Board } from "~/components/Board";
+import { LogViewer } from "~/components/LogViewer";
 
 export function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [showLogs, setShowLogs] = useState(false);
 
   const { data: projects = [], isLoading } = useQuery(listProjectsOptions());
 
@@ -72,8 +74,10 @@ export function App() {
         project={selectedProject}
         projects={projects}
         onProjectChange={handleProjectChange}
+        onLogsClick={() => setShowLogs(true)}
       />
       {selectedProjectId && <Board projectId={selectedProjectId} />}
+      {showLogs && <LogViewer onClose={() => setShowLogs(false)} />}
     </div>
   );
 }

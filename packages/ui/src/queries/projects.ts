@@ -40,3 +40,27 @@ export function useDeleteProject() {
     },
   });
 }
+
+export function usePauseProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (projectId: string) =>
+      httpPost<Project>(`/projects/${projectId}/pause`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+export function useResumeProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (projectId: string) =>
+      httpPost<Project>(`/projects/${projectId}/resume`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}

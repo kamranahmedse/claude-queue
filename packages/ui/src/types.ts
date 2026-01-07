@@ -2,6 +2,7 @@ export interface Project {
   id: string;
   path: string;
   name: string;
+  paused: boolean;
   created_at: string;
 }
 

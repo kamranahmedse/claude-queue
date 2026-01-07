@@ -12,6 +12,7 @@ interface Project {
   id: string;
   name: string;
   path: string;
+  paused: boolean;
 }
 
 interface Task {
@@ -235,6 +236,20 @@ If kanban_wait_for_reply returns { deleted: true }, discard changes and pick the
       case "kanban_get_tasks": {
         const projectId = args?.projectId as string;
         const status = args?.status as string | undefined;
+
+        const project = await httpGet<Project>(`/api/projects/${projectId}`);
+
+        if (project.paused) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ paused: true, message: "Project is paused. Wait for user to resume before picking up new tasks." }),
+              },
+            ],
+          };
+        }
+
         const url = status
           ? `/api/tasks/project/${projectId}?status=${status}`
           : `/api/tasks/project/${projectId}`;
