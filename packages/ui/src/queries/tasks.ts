@@ -117,11 +117,6 @@ export function useMoveTask() {
         }
       }
     },
-    onSettled: (task) => {
-      if (task) {
-        queryClient.invalidateQueries({ queryKey: ["tasks", task.project_id] });
-      }
-    },
   });
 }
 

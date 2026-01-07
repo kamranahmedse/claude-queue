@@ -197,7 +197,7 @@ export function TaskDetail(props: TaskDetailProps) {
                     <span className="text-xs text-zinc-600">
                       {formatTime(c.created_at)}
                     </span>
-                    {c.author === "user" && c.seen && (
+                    {c.author === "user" && c.seen === true && (
                       <span className="flex items-center gap-1 text-xs text-green-500" title="Claude has seen this comment">
                         <Eye className="w-3 h-3" />
                       </span>

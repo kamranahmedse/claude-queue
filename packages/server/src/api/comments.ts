@@ -120,7 +120,8 @@ router.get("/task/:taskId/wait-for-reply", async (req, res) => {
 
     query += " ORDER BY created_at DESC LIMIT 1";
 
-    return db.prepare(query).get(...params) as Comment | undefined || null;
+    const row = db.prepare(query).get(...params) as any | undefined;
+    return row ? rowToComment(row) : null;
   };
 
   const poll = () => {

@@ -12,6 +12,13 @@ function rowToTask(row: any): Task {
   };
 }
 
+function rowToComment(row: any): Comment {
+  return {
+    ...row,
+    seen: Boolean(row.seen),
+  };
+}
+
 router.get("/project/:projectId", (req, res) => {
   const db = getDb();
   const { status } = req.query;
@@ -39,13 +46,13 @@ router.get("/:id", (req, res) => {
     return;
   }
 
-  const comments = db
+  const commentsRaw = db
     .prepare("SELECT * FROM comments WHERE task_id = ? ORDER BY created_at ASC")
-    .all(req.params.id) as Comment[];
+    .all(req.params.id) as any[];
 
   const result: TaskWithComments = {
     ...rowToTask(task),
-    comments,
+    comments: commentsRaw.map(rowToComment),
   };
 
   res.json(result);

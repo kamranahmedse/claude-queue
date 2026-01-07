@@ -1,4 +1,4 @@
-import { Copy, Check, Pause, Play, Terminal } from "lucide-react";
+import { Pause, Play, Rocket } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePauseProject, useResumeProject } from "~/queries/projects";
@@ -10,13 +10,12 @@ interface HeaderProps {
   project: Project | null;
   projects: Project[];
   onProjectChange: (projectId: string) => void;
-  onLogsClick: () => void;
+  onStatusClick: () => void;
 }
 
 export function Header(props: HeaderProps) {
-  const { project, projects, onProjectChange, onLogsClick } = props;
+  const { project, projects, onProjectChange, onStatusClick } = props;
 
-  const [copied, setCopied] = useState(false);
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
   const pauseProject = usePauseProject();
   const resumeProject = useResumeProject();
@@ -26,15 +25,6 @@ export function Header(props: HeaderProps) {
     enabled: !!project,
     refetchInterval: 2000,
   });
-
-  const handleCopy = () => {
-    if (!project) {
-      return;
-    }
-    navigator.clipboard.writeText(project.id);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handlePauseClick = () => {
     if (!project) {
@@ -78,12 +68,12 @@ export function Header(props: HeaderProps) {
         <div className="flex items-center gap-2">
           <ClaudeStatus project={project} tasks={tasks} />
           <button
-            onClick={onLogsClick}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
-            title="View server logs"
+            onClick={onStatusClick}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs text-orange-400 hover:text-orange-300 hover:bg-orange-900/20 rounded-lg transition-colors"
+            title="View setup guide and system status"
           >
-            <Terminal className="w-3.5 h-3.5" />
-            <span>Logs</span>
+            <Rocket className="w-3.5 h-3.5" />
+            <span>How to Start</span>
           </button>
           {project && (
             <>
@@ -105,22 +95,6 @@ export function Header(props: HeaderProps) {
                   <>
                     <Pause className="w-3.5 h-3.5" />
                     <span>Pause</span>
-                  </>
-                )}
-              </button>
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-green-500" />
-                    <span className="text-green-500">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-mono">{project.id}</span>
-                    <Copy className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>

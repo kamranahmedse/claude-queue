@@ -463,4 +463,43 @@ program
     }
   });
 
+program
+  .command("clean")
+  .description("Clean up log files and temporary data")
+  .option("--logs", "Remove log files only")
+  .option("--all", "Remove all data (logs, database, PID file)")
+  .action(async (options) => {
+    const fs = await import("node:fs/promises");
+    const removed: string[] = [];
+
+    if (options.logs || !options.all) {
+      if (existsSync(LOG_FILE)) {
+        await fs.unlink(LOG_FILE);
+        removed.push("server.log");
+      }
+    }
+
+    if (options.all) {
+      const dbFile = join(KANBAN_DIR, "kanban.db");
+      if (existsSync(LOG_FILE)) {
+        await fs.unlink(LOG_FILE);
+        removed.push("server.log");
+      }
+      if (existsSync(PID_FILE)) {
+        await fs.unlink(PID_FILE);
+        removed.push("server.pid");
+      }
+      if (existsSync(dbFile)) {
+        await fs.unlink(dbFile);
+        removed.push("kanban.db");
+      }
+    }
+
+    if (removed.length === 0) {
+      console.log("No files to clean");
+    } else {
+      console.log(`Cleaned: ${removed.join(", ")}`);
+    }
+  });
+
 program.parse();
