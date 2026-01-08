@@ -24,10 +24,8 @@ export function log(message: string) {
   const timestamp = new Date().toISOString();
   const line = `[${timestamp}] ${message}\n`;
 
-  // Write to console
   process.stdout.write(line);
 
-  // Write to file
   const stream = ensureLogFile();
   stream.write(line);
 }

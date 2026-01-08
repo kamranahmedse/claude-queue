@@ -94,7 +94,7 @@ export function TaskCard(props: TaskCardProps) {
       {...(isLocked ? {} : listeners)}
       onClick={onClick}
       className={`
-        p-3 rounded-lg border transition-colors select-none
+        p-3 rounded-lg border select-none
         ${isLocked ? "cursor-default" : "cursor-pointer"}
         ${isDragging ? "opacity-50" : ""}
         ${isLocked && !task.blocked ? "in-progress-glow" : ""}

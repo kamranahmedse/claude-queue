@@ -127,6 +127,7 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
   const [overInfo, setOverInfo] = useState<{ status: TaskStatus; position: number } | null>(null);
   const [templateOverInfo, setTemplateOverInfo] = useState<{ position: number } | null>(null);
   const [templateDropTarget, setTemplateDropTarget] = useState<TaskStatus | null>(null);
+  const [isDraggingOverInProgress, setIsDraggingOverInProgress] = useState(false);
 
   useImperativeHandle(ref, () => ({
     openAddTask: () => setAddTaskStatus("ready"),
@@ -246,24 +247,31 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
     const overTask = serverTasks.find((t) => t.id === over.id);
     if (overTask) {
       targetStatus = overTask.status;
-      const statusTasks = tasksByStatus[targetStatus];
-      const overIndex = statusTasks.findIndex((t) => t.id === over.id);
+      // Use server state consistently for position calculation
+      const serverStatusTasks = serverTasks
+        .filter((t) => t.status === targetStatus)
+        .sort((a, b) => a.position - b.position);
+      const overIndex = serverStatusTasks.findIndex((t) => t.id === over.id);
       targetPosition = overIndex;
     } else {
       targetStatus = over.id as TaskStatus;
-      targetPosition = tasksByStatus[targetStatus].length;
+      const serverStatusTasks = serverTasks.filter((t) => t.status === targetStatus);
+      targetPosition = serverStatusTasks.length;
     }
 
     if (targetStatus === "in_progress") {
+      setIsDraggingOverInProgress(true);
+      setOverInfo(null);
+      setOptimisticTasks(null);
       return;
     }
 
+    setIsDraggingOverInProgress(false);
     setOverInfo({ status: targetStatus, position: targetPosition });
 
-    if (draggedTask.status !== targetStatus || draggedTask.position !== targetPosition) {
-      const newTasks = reorderTasks(serverTasks, draggedTask.id, targetStatus, targetPosition);
-      setOptimisticTasks(newTasks);
-    }
+    // Always update optimistic state to ensure visual feedback
+    const newTasks = reorderTasks(serverTasks, draggedTask.id, targetStatus, targetPosition);
+    setOptimisticTasks(newTasks);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -319,6 +327,7 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
     if (!overInfo) {
       setActiveTask(null);
       setOptimisticTasks(null);
+      setIsDraggingOverInProgress(false);
       return;
     }
 
@@ -327,6 +336,7 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
       setActiveTask(null);
       setOverInfo(null);
       setOptimisticTasks(null);
+      setIsDraggingOverInProgress(false);
       return;
     }
 
@@ -336,6 +346,7 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
       setActiveTask(null);
       setOverInfo(null);
       setOptimisticTasks(null);
+      setIsDraggingOverInProgress(false);
       return;
     }
 
@@ -343,11 +354,13 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
       setActiveTask(null);
       setOverInfo(null);
       setOptimisticTasks(null);
+      setIsDraggingOverInProgress(false);
       return;
     }
 
     setActiveTask(null);
     setOverInfo(null);
+    setIsDraggingOverInProgress(false);
 
     moveTask.mutate(
       {
@@ -369,6 +382,7 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
     setOverInfo(null);
     setTemplateOverInfo(null);
     setTemplateDropTarget(null);
+    setIsDraggingOverInProgress(false);
     setOptimisticTasks(null);
     setOptimisticTemplates(null);
   };
@@ -461,6 +475,7 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
                       : undefined
                   }
                   isDeleting={deleteAllTasks.isPending}
+                  showDropNotAllowed={isDraggingOverInProgress && column.id === "in_progress"}
                 />
               </div>
             ))}
@@ -468,14 +483,10 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
         </div>
         <DragOverlay dropAnimation={null}>
           {activeTask && (
-            <div className="rotate-3 opacity-90">
-              <TaskCard task={activeTask} onClick={() => {}} />
-            </div>
+            <TaskCard task={activeTask} onClick={() => {}} />
           )}
           {activeTemplate && (
-            <div className="rotate-3 opacity-90">
-              <TemplateCard template={activeTemplate} onClick={() => {}} />
-            </div>
+            <TemplateCard template={activeTemplate} onClick={() => {}} />
           )}
         </DragOverlay>
       </DndContext>

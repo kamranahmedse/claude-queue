@@ -22,13 +22,12 @@ export function createServer(port = 3333): { app: Express; server: Server } {
   app.use(cors());
   app.use(express.json());
 
-  // Request logging middleware
   app.use((req, res, next) => {
     const start = Date.now();
     res.on("finish", () => {
       const duration = Date.now() - start;
-      // Skip logging for health checks
-      if (req.path !== "/health" && req.path !== "/api/health") {
+      const isHealthCheck = req.path === "/health" || req.path === "/api/health";
+      if (!isHealthCheck) {
         logRequest(req.method, req.path, res.statusCode, duration);
       }
     });
@@ -42,7 +41,6 @@ export function createServer(port = 3333): { app: Express; server: Server } {
   app.use("/api/maintenance", maintenanceRouter);
   app.use("/health", healthRouter);
 
-  // Find UI path - works for both npm package and development
   const uiPaths = [
     join(__dirname, "../ui"),        // npm package: dist/server/../ui = dist/ui
     join(__dirname, "../../ui/dist") // development: dist/../../ui/dist

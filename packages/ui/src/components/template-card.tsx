@@ -49,7 +49,7 @@ export function TemplateCard(props: TemplateCardProps) {
         {...listeners}
         onClick={onClick}
         className={`
-          group p-3 rounded-lg border transition-colors select-none cursor-pointer
+          group p-3 rounded-lg border select-none cursor-pointer
           ${isDragging ? "opacity-50" : ""}
           bg-indigo-900/20 border-indigo-700/30 hover:border-indigo-600/50
         `}

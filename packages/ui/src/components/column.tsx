@@ -18,10 +18,11 @@ interface ColumnProps {
   onAddClick?: () => void;
   onDeleteAll?: () => void;
   isDeleting?: boolean;
+  showDropNotAllowed?: boolean;
 }
 
 export function Column(props: ColumnProps) {
-  const { id, title, tasks, onTaskClick, onAddClick, onDeleteAll, isDeleting } = props;
+  const { id, title, tasks, onTaskClick, onAddClick, onDeleteAll, isDeleting, showDropNotAllowed } = props;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -75,8 +76,8 @@ export function Column(props: ColumnProps) {
         <div
           ref={setNodeRef}
           className={`
-            flex-1 px-1 transition-colors
-            ${isOver ? "bg-zinc-900/30" : ""}
+            flex-1 px-1
+            ${showDropNotAllowed ? "bg-red-900/20 ring-2 ring-red-500/30 ring-inset rounded-lg" : isOver ? "bg-zinc-900/30" : ""}
           `}
         >
           <SortableContext

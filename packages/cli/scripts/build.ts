@@ -1,10 +1,3 @@
-#!/usr/bin/env tsx
-/**
- * Build script for claude-kanban npm package
- *
- * This bundles everything (CLI, Server, MCP, UI) into a single publishable package.
- */
-
 import { execSync } from "node:child_process";
 import { cpSync, rmSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -54,7 +47,6 @@ function bundleCLI(): void {
 function copyAssets(): void {
   console.log("\n📋 Copying assets...");
 
-  // Copy UI dist
   const uiSrc = join(packagesRoot, "ui", "dist");
   const uiDest = join(distDir, "ui");
   if (existsSync(uiSrc)) {
@@ -65,7 +57,6 @@ function copyAssets(): void {
     process.exit(1);
   }
 
-  // Copy server dist
   const serverSrc = join(packagesRoot, "server", "dist");
   const serverDest = join(distDir, "server");
   if (existsSync(serverSrc)) {
@@ -76,7 +67,6 @@ function copyAssets(): void {
     process.exit(1);
   }
 
-  // Copy MCP dist
   const mcpSrc = join(packagesRoot, "mcp", "dist");
   const mcpDest = join(distDir, "mcp");
   if (existsSync(mcpSrc)) {
@@ -87,7 +77,6 @@ function copyAssets(): void {
     process.exit(1);
   }
 
-  // Copy skills (only production kanban skill, not kanban-dev)
   const skillsRoot = join(packagesRoot, "..", "skills");
   const kanbanSkillSrc = join(skillsRoot, "kanban", "SKILL.md");
   const skillsDest = join(distDir, "skills", "kanban");
@@ -104,7 +93,6 @@ function copyAssets(): void {
 function createEntryPoints(): void {
   console.log("\n🔧 Creating entry points...");
 
-  // Create MCP entry point wrapper
   const mcpWrapper = `#!/usr/bin/env node
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -112,7 +100,6 @@ import { dirname, join } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const mcpPath = join(__dirname, "mcp", "index.js");
 
-// Dynamic import to run the MCP server
 import(mcpPath);
 `;
 
