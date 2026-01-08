@@ -13,7 +13,7 @@ import {
   type DragOverEvent,
   type CollisionDetection,
 } from "@dnd-kit/core";
-import { listTasksOptions, useCreateTask, useMoveTask, useTasksRefetchInterval } from "~/queries/tasks";
+import { listTasksOptions, useCreateTask, useMoveTask, useDeleteAllTasks, useTasksRefetchInterval } from "~/queries/tasks";
 import type { Task, TaskStatus } from "~/types";
 import { COLUMNS } from "~/types";
 import { Column } from "./Column";
@@ -89,6 +89,7 @@ export function Board(props: BoardProps) {
   });
   const createTask = useCreateTask(projectId);
   const moveTask = useMoveTask();
+  const deleteAllTasks = useDeleteAllTasks(projectId);
 
   const tasks = optimisticTasks ?? serverTasks;
 
@@ -263,6 +264,12 @@ export function Board(props: BoardProps) {
                   ? () => setAddTaskStatus(column.id)
                   : undefined
               }
+              onDeleteAll={
+                column.id !== "in_progress"
+                  ? () => deleteAllTasks.mutate(column.id)
+                  : undefined
+              }
+              isDeleting={deleteAllTasks.isPending}
             />
           ))}
         </div>

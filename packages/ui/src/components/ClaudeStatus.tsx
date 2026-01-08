@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bot, Loader2, Moon, AlertCircle, ChevronDown, AlertTriangle } from "lucide-react";
+import { Loader2, AlertCircle, ChevronDown, Terminal } from "lucide-react";
+import { CopyButton } from "./CopyButton";
 import type { Task, Project } from "~/types";
 
 interface ClaudeStatusProps {
@@ -7,28 +8,7 @@ interface ClaudeStatusProps {
   tasks: Task[];
 }
 
-interface StatusInfo {
-  icon: React.ReactNode;
-  label: string;
-  color: string;
-  bgColor: string;
-  description: string;
-  action?: string;
-  command?: string;
-  details?: string;
-}
-
-const HEARTBEAT_TIMEOUT_MS = 120000;
 const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
-
-function isClaudeConnected(project: Project): boolean {
-  if (!project.claude_last_seen) {
-    return false;
-  }
-  const lastSeen = new Date(project.claude_last_seen).getTime();
-  const now = Date.now();
-  return now - lastSeen < HEARTBEAT_TIMEOUT_MS;
-}
 
 export function ClaudeStatus(props: ClaudeStatusProps) {
   const { project, tasks } = props;
@@ -40,47 +20,17 @@ export function ClaudeStatus(props: ClaudeStatusProps) {
   }
 
   const inProgressTask = tasks.find((t) => t.status === "in_progress");
-  const readyTasks = tasks.filter((t) => t.status === "ready");
-  const claudeConnected = isClaudeConnected(project);
 
-  const getStatus = (): StatusInfo => {
-    if (project.paused) {
-      return {
-        icon: <Moon className="w-3.5 h-3.5" />,
-        label: "Paused",
-        color: "text-zinc-500",
-        bgColor: "bg-zinc-800",
-        description: "Claude is paused and will not pick up new tasks.",
-        action: "Click the Resume button to allow Claude to continue working.",
-        details: "Any task currently in progress will complete, but no new tasks will be claimed.",
-      };
-    }
-
-    if (!claudeConnected) {
-      return {
-        icon: <AlertTriangle className="w-3.5 h-3.5" />,
-        label: "Start Claude",
-        color: "text-yellow-400",
-        bgColor: "bg-yellow-900/20",
-        description: "Claude is not running. Start the kanban loop to process tasks.",
-        action: "Run this command in Claude Code:",
-        command: `${SKILL_COMMAND} ${project.id}`,
-        details: readyTasks.length > 0
-          ? `${readyTasks.length} task${readyTasks.length > 1 ? "s" : ""} waiting to be picked up.`
-          : "Claude will automatically pick up tasks from the Ready column.",
-      };
-    }
-
+  const getStatus = () => {
     if (inProgressTask) {
       if (inProgressTask.blocked) {
         return {
           icon: <AlertCircle className="w-3.5 h-3.5" />,
-          label: "Blocked",
+          label: "Needs reply",
           color: "text-red-400",
           bgColor: "bg-red-900/20",
           description: "Claude is waiting for your response.",
-          action: "Click on the task and reply to Claude's question to continue.",
-          details: inProgressTask.current_activity || "Check the task for Claude's question.",
+          action: "Click on the task in progress and reply to Claude's question.",
         };
       }
       return {
@@ -88,31 +38,17 @@ export function ClaudeStatus(props: ClaudeStatusProps) {
         label: "Working",
         color: "text-green-400",
         bgColor: "bg-green-900/20",
-        description: "Claude is actively working on a task.",
-        action: "No action needed. Claude will update status as it progresses.",
-        details: inProgressTask.current_activity || `Working on: ${inProgressTask.title}`,
-      };
-    }
-
-    if (readyTasks.length > 0) {
-      return {
-        icon: <Bot className="w-3.5 h-3.5" />,
-        label: "Ready",
-        color: "text-blue-400",
-        bgColor: "bg-blue-900/20",
-        description: `${readyTasks.length} task${readyTasks.length > 1 ? "s" : ""} ready for Claude.`,
-        details: "Claude is connected and will pick up tasks automatically.",
+        description: inProgressTask.current_activity || `Working on: ${inProgressTask.title}`,
       };
     }
 
     return {
-      icon: <Bot className="w-3.5 h-3.5" />,
-      label: "Watching",
-      color: "text-green-400",
-      bgColor: "bg-green-900/20",
-      description: "Claude is connected and watching for tasks.",
-      action: "Drag tasks to the Ready column or create new tasks there.",
-      details: "Claude will automatically pick up tasks from the Ready column.",
+      icon: <Terminal className="w-3.5 h-3.5" />,
+      label: "Idle",
+      color: "text-zinc-400",
+      bgColor: "bg-zinc-800",
+      description: "Run this command in Claude Code to start working:",
+      command: `${SKILL_COMMAND} ${project.id}`,
     };
   };
 
@@ -139,23 +75,16 @@ export function ClaudeStatus(props: ClaudeStatusProps) {
                 <span className={`font-medium ${status.color}`}>{status.label}</span>
               </div>
               <p className="text-sm text-zinc-300">{status.description}</p>
-              {status.details && (
-                <p className="text-xs text-zinc-500 bg-zinc-800/50 rounded px-2 py-1.5">
-                  {status.details}
-                </p>
+              {status.command && (
+                <div className="flex items-center gap-2 bg-zinc-800 rounded border border-zinc-700">
+                  <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2">
+                    {status.command}
+                  </code>
+                  <CopyButton text={status.command} className="mr-2" />
+                </div>
               )}
               {status.action && (
-                <div className="pt-2 border-t border-zinc-800 space-y-2">
-                  <p className="text-xs text-zinc-400">
-                    <strong className="text-zinc-300">What to do: </strong>
-                    {status.action}
-                  </p>
-                  {status.command && (
-                    <code className="block text-sm font-mono bg-zinc-800 text-blue-300 px-3 py-2 rounded border border-zinc-700">
-                      {status.command}
-                    </code>
-                  )}
-                </div>
+                <p className="text-xs text-zinc-500">{status.action}</p>
               )}
             </div>
           </div>

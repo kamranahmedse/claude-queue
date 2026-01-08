@@ -142,6 +142,18 @@ export function useDeleteTask() {
   });
 }
 
+export function useDeleteAllTasks(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (status: TaskStatus) =>
+      httpDelete<{ success: boolean; deleted: number }>(`/tasks/project/${projectId}/status/${status}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+    },
+  });
+}
+
 export function useAddComment(taskId: string) {
   const queryClient = useQueryClient();
 

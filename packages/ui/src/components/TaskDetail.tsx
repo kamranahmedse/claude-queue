@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Trash2, Bot, User, Send, Pencil, Check, Eye } from "lucide-react";
 import { taskDetailsOptions, useAddComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 import type { Task } from "~/types";
 
 interface TaskDetailProps {
@@ -203,9 +204,7 @@ export function TaskDetail(props: TaskDetailProps) {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-                    {c.content}
-                  </p>
+                  <MarkdownRenderer content={c.content} />
                 </div>
               ))}
               {comments.length === 0 && (

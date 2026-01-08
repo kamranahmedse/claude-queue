@@ -213,4 +213,25 @@ router.delete("/:id", (req, res) => {
   res.json({ success: true });
 });
 
+router.delete("/project/:projectId/status/:status", (req, res) => {
+  const db = getDb();
+  const { projectId, status } = req.params;
+
+  const project = db.prepare("SELECT id FROM projects WHERE id = ?").get(projectId);
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const validStatuses = ["backlog", "ready", "in_progress", "done"];
+  if (!validStatuses.includes(status)) {
+    res.status(400).json({ error: "Invalid status" });
+    return;
+  }
+
+  const result = db.prepare("DELETE FROM tasks WHERE project_id = ? AND status = ?").run(projectId, status);
+
+  res.json({ success: true, deleted: result.changes });
+});
+
 export default router;

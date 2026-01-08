@@ -4,11 +4,10 @@ import { Toaster } from "sonner";
 import { listProjectsOptions } from "~/queries/projects";
 import { Header } from "~/components/Header";
 import { Board } from "~/components/Board";
-import { StatusPanel } from "~/components/StatusPanel";
+import { CopyButton } from "~/components/CopyButton";
 
 export function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [showStatus, setShowStatus] = useState(false);
 
   const { data: projects = [], isLoading } = useQuery(listProjectsOptions());
 
@@ -50,8 +49,12 @@ export function App() {
             No projects yet
           </h1>
           <p className="text-sm text-zinc-500">
-            Run <code className="px-1.5 py-0.5 bg-zinc-800 rounded">npx claude-kanban</code> in a project directory to get started.
+            Run the following command in a project directory to get started:
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-zinc-800 rounded-lg">
+            <code className="text-sm text-orange-400">npx claude-kanban</code>
+            <CopyButton text="npx claude-kanban" />
+          </div>
         </div>
       </div>
     );
@@ -74,10 +77,8 @@ export function App() {
         project={selectedProject}
         projects={projects}
         onProjectChange={handleProjectChange}
-        onStatusClick={() => setShowStatus(true)}
       />
       {selectedProjectId && <Board projectId={selectedProjectId} />}
-      {showStatus && <StatusPanel project={selectedProject} onClose={() => setShowStatus(false)} />}
     </div>
   );
 }

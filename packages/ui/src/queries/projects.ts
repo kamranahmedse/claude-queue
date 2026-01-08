@@ -1,5 +1,5 @@
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
-import { httpGet, httpPost, httpDelete } from "~/lib/http";
+import { httpGet, httpDelete } from "~/lib/http";
 import type { Project } from "~/types";
 
 export function listProjectsOptions() {
@@ -35,30 +35,6 @@ export function useDeleteProject() {
   return useMutation({
     mutationFn: (projectId: string) =>
       httpDelete<{ success: boolean }>(`/projects/${projectId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-    },
-  });
-}
-
-export function usePauseProject() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (projectId: string) =>
-      httpPost<Project>(`/projects/${projectId}/pause`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-    },
-  });
-}
-
-export function useResumeProject() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (projectId: string) =>
-      httpPost<Project>(`/projects/${projectId}/resume`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
