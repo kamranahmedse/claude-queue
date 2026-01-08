@@ -104,7 +104,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: "kanban_claim_task",
-      description: "Claim a ready task and move it to in_progress",
+      description: "Claim a ready task and move it to in_progress. Pass the current git commit hash as starting_commit - this will be used to reset changes if the task is cancelled.",
       inputSchema: {
         type: "object",
         properties: {
@@ -112,8 +112,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             description: "Task ID to claim",
           },
+          starting_commit: {
+            type: "string",
+            description: "Current git commit hash (from `git rev-parse HEAD`). Used to reset changes if task is cancelled.",
+          },
         },
-        required: ["taskId"],
+        required: ["taskId", "starting_commit"],
       },
     },
     {
@@ -289,16 +293,18 @@ If kanban_wait_for_reply returns { deleted: true }, discard changes and pick the
 
       case "kanban_claim_task": {
         const taskId = args?.taskId as string;
+        const starting_commit = args?.starting_commit as string;
         const task = await httpPost<Task>(`/api/tasks/${taskId}/move`, {
           status: "in_progress",
           position: 0,
+          starting_commit,
         });
 
         return {
           content: [
             {
               type: "text",
-              text: `Claimed task: "${task.title}" - now in progress`,
+              text: `Claimed task: "${task.title}" - now in progress (starting commit: ${starting_commit})`,
             },
           ],
         };
@@ -449,6 +455,7 @@ If kanban_wait_for_reply returns { deleted: true }, discard changes and pick the
 
         if (unseenComments.length > 0) {
           await httpPatch(`/api/comments/task/${taskId}/mark-seen`, {});
+          await httpPatch(`/api/tasks/${taskId}`, { blocked: false });
         }
 
         if (userComments.length === 0) {

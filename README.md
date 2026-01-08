@@ -109,10 +109,10 @@ make publish         # Publish to npm
 
 ### Ports
 
-| Environment | Server Port | UI Dev Port | Skill |
-|-------------|-------------|-------------|-------|
-| Development | 3334 | 5173 | `/kanban-dev` |
-| Production | 3333 | - | `/kanban` |
+| Environment | Server Port | UI Dev Port | Skill         |
+|-------------|-------------|-------------|---------------|
+| Development | 3334        | 5173        | `/kanban-dev` |
+| Production  | 3333        | -           | `/kanban`     |
 
 ### Project Structure
 
@@ -205,14 +205,14 @@ Claude will:
 
 The UI shows Claude's connection status in the header. The status is based on **heartbeat tracking** - Claude sends a heartbeat every time it checks for tasks, so the UI knows if Claude is actively watching.
 
-| Status | Icon | Meaning |
-|--------|------|---------|
-| **Start Claude** | ⚠️ Yellow | Claude is not running. Run `/kanban <project-id>` to start. |
-| **Working** | 🔄 Green | Claude is actively working on a task. |
-| **Blocked** | 🔴 Red | Claude is waiting for your response. Click the task to reply. |
-| **Ready** | 🔵 Blue | Claude is connected and tasks are waiting to be picked up. |
-| **Watching** | 🟢 Green | Claude is connected and watching for new tasks. |
-| **Paused** | ⏸️ Gray | You've paused Claude. Click Resume to continue. |
+| Status           | Icon      | Meaning                                                       |
+|------------------|-----------|---------------------------------------------------------------|
+| **Start Claude** | ⚠️ Yellow | Claude is not running. Run `/kanban <project-id>` to start.   |
+| **Working**      | 🔄 Green  | Claude is actively working on a task.                         |
+| **Blocked**      | 🔴 Red    | Claude is waiting for your response. Click the task to reply. |
+| **Ready**        | 🔵 Blue   | Claude is connected and tasks are waiting to be picked up.    |
+| **Watching**     | 🟢 Green  | Claude is connected and watching for new tasks.               |
+| **Paused**       | ⏸️ Gray   | You've paused Claude. Click Resume to continue.               |
 
 ### Pause After Task / Resume
 

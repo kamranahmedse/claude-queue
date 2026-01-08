@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, type Router as RouterType } from "express";
 import { nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
 import type { Comment } from "../types.js";
 
-const router = Router();
+const router: RouterType = Router();
 
 interface CommentRow {
   id: string;

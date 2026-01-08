@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, type Router as RouterType } from "express";
 import { customAlphabet, nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
 import type { Project } from "../types.js";
 
-const router = Router();
+const router: RouterType = Router();
 const generateId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 4);
 
 const DEFAULT_TEMPLATES = [

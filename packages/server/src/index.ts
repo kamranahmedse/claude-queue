@@ -1,8 +1,9 @@
-import express from "express";
+import express, { type Express } from "express";
 import cors from "cors";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import type { Server } from "http";
 
 import projectsRouter from "./api/projects.js";
 import tasksRouter from "./api/tasks.js";
@@ -14,7 +15,7 @@ import { log, logRequest } from "./logger.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export function createServer(port = 3333) {
+export function createServer(port = 3333): { app: Express; server: Server } {
   const app = express();
 
   app.use(cors());

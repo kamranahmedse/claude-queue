@@ -75,6 +75,8 @@ body {
 .in-progress-stripes {
   position: relative;
   overflow: hidden;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .in-progress-stripes::before {
@@ -95,5 +97,7 @@ body {
   width: calc(100% + 28px);
   animation: stripe-move 1s linear infinite;
   will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
   pointer-events: none;
 }

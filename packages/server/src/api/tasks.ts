@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, type Router as RouterType } from "express";
 import { nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
 import type { Task, Comment, TaskWithComments, TaskStatus } from "../types.js";
 
-const router = Router();
+const router: RouterType = Router();
 
 interface TaskRow {
   id: string;
@@ -13,6 +13,7 @@ interface TaskRow {
   status: TaskStatus;
   blocked: number;
   current_activity: string | null;
+  starting_commit: string | null;
   position: number;
   created_at: string;
   updated_at: string;
@@ -157,7 +158,7 @@ router.patch("/:id", (req, res) => {
 });
 
 router.post("/:id/move", (req, res) => {
-  const { status, position } = req.body;
+  const { status, position, starting_commit } = req.body;
 
   if (!status || position === undefined) {
     res.status(400).json({ error: "status and position are required" });
@@ -200,10 +201,17 @@ router.post("/:id/move", (req, res) => {
       `).run(task.project_id, status, position);
     }
 
-    db.prepare(`
-      UPDATE tasks SET status = ?, position = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(status, position, req.params.id);
+    if (status === "in_progress" && starting_commit) {
+      db.prepare(`
+        UPDATE tasks SET status = ?, position = ?, starting_commit = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(status, position, starting_commit, req.params.id);
+    } else {
+      db.prepare(`
+        UPDATE tasks SET status = ?, position = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(status, position, req.params.id);
+    }
   })();
 
   if (status === "in_progress" || status === "done") {

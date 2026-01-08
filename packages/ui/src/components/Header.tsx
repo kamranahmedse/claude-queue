@@ -25,7 +25,7 @@ export function Header(props: HeaderProps) {
   });
 
   return (
-    <header className="h-14 border-b border-zinc-800 flex items-center justify-between px-4">
+    <header className="sticky top-0 z-20 h-14 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
         <h1 className="text-sm font-medium text-zinc-300">claude-kanban</h1>
         {projects.length > 0 && (

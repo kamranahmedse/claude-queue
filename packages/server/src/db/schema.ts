@@ -77,6 +77,12 @@ export function initSchema(db: Database.Database) {
     db.exec("ALTER TABLE comments ADD COLUMN seen INTEGER DEFAULT 0");
   }
 
+  const taskColumns = db.prepare("PRAGMA table_info(tasks)").all() as { name: string }[];
+  const hasStartingCommit = taskColumns.some((col) => col.name === "starting_commit");
+  if (!hasStartingCommit) {
+    db.exec("ALTER TABLE tasks ADD COLUMN starting_commit TEXT");
+  }
+
   const hasClaudeLastSeen = projectColumns.some((col) => col.name === "claude_last_seen");
   if (!hasClaudeLastSeen) {
     db.exec("ALTER TABLE projects ADD COLUMN claude_last_seen DATETIME");

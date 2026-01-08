@@ -86,6 +86,19 @@ function copyAssets() {
     console.error("  ✗ MCP dist not found! Run build:mcp first.");
     process.exit(1);
   }
+
+  // Copy skills (only production kanban skill, not kanban-dev)
+  const skillsRoot = join(packagesRoot, "..", "skills");
+  const kanbanSkillSrc = join(skillsRoot, "kanban", "SKILL.md");
+  const skillsDest = join(distDir, "skills", "kanban");
+  if (existsSync(kanbanSkillSrc)) {
+    mkdirSync(skillsDest, { recursive: true });
+    cpSync(kanbanSkillSrc, join(skillsDest, "SKILL.md"));
+    console.log("  ✓ Skills copied to dist/skills");
+  } else {
+    console.error("  ✗ Skills not found at skills/kanban/SKILL.md");
+    process.exit(1);
+  }
 }
 
 function createEntryPoints() {

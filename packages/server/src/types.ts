@@ -17,6 +17,7 @@ export interface Task {
   status: TaskStatus;
   blocked: boolean;
   current_activity: string | null;
+  starting_commit: string | null;
   position: number;
   created_at: string;
   updated_at: string;

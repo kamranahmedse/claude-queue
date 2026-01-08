@@ -35,7 +35,7 @@ export function Column(props: ColumnProps) {
   return (
     <>
       <div className="flex-1 min-w-[280px] max-w-[320px] select-none flex flex-col">
-        <div className="sticky top-14 z-10 bg-zinc-950 flex items-center justify-between pt-4 pb-3 px-1">
+        <div className="z-10 bg-zinc-950 flex items-center justify-between py-3 px-1">
           <h3 className="text-sm font-medium text-zinc-400">{title}</h3>
           <div className="flex items-center gap-2">
             {tasks.length > 0 && onDeleteAll && (
