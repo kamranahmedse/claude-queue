@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { MessageSquare, RotateCcw, XCircle, Lock } from "lucide-react";
 import { useAddComment } from "~/queries/tasks";
+import { ConfirmDialog } from "./ConfirmDialog";
 import type { Task } from "~/types";
 
 interface TaskCardProps {
@@ -121,52 +122,31 @@ export function TaskCard(props: TaskCardProps) {
       )}
 
       {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setShowResetConfirm(false)}
-          />
-          <div className="relative w-full max-w-sm mx-4 bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <h3 className="text-lg font-medium text-zinc-100 mb-3">
-              Start Over?
-            </h3>
-            <div className="text-sm text-zinc-400 space-y-2 mb-5">
+        <ConfirmDialog
+          title="Start Over?"
+          message={
+            <div className="space-y-2">
               <p>This will ask Claude to:</p>
               <ul className="list-disc list-inside text-zinc-500">
                 <li>Discard all uncommitted code changes</li>
                 <li>Start the task fresh from the beginning</li>
               </ul>
             </div>
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                Go Back
-              </button>
-              <button
-                onClick={handleConfirmReset}
-                disabled={addComment.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-500 rounded-lg transition-colors"
-              >
-                {addComment.isPending ? "Restarting..." : "Start Over"}
-              </button>
-            </div>
-          </div>
-        </div>
+          }
+          confirmLabel="Start Over"
+          cancelLabel="Go Back"
+          confirmVariant="warning"
+          isLoading={addComment.isPending}
+          onConfirm={handleConfirmReset}
+          onCancel={() => setShowResetConfirm(false)}
+        />
       )}
 
       {showCancelConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setShowCancelConfirm(false)}
-          />
-          <div className="relative w-full max-w-sm mx-4 bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <h3 className="text-lg font-medium text-zinc-100 mb-3">
-              Abort Task?
-            </h3>
-            <div className="text-sm text-zinc-400 space-y-2 mb-5">
+        <ConfirmDialog
+          title="Abort Task?"
+          message={
+            <div className="space-y-2">
               <p>This will ask Claude to:</p>
               <ul className="list-disc list-inside text-zinc-500">
                 <li>Stop working on this task</li>
@@ -174,23 +154,13 @@ export function TaskCard(props: TaskCardProps) {
                 <li>Move the task to Backlog</li>
               </ul>
             </div>
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowCancelConfirm(false)}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                Keep Working
-              </button>
-              <button
-                onClick={handleConfirmCancel}
-                disabled={addComment.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors"
-              >
-                {addComment.isPending ? "Aborting..." : "Abort Task"}
-              </button>
-            </div>
-          </div>
-        </div>
+          }
+          confirmLabel="Abort Task"
+          cancelLabel="Keep Working"
+          isLoading={addComment.isPending}
+          onConfirm={handleConfirmCancel}
+          onCancel={() => setShowCancelConfirm(false)}
+        />
       )}
     </div>
   );

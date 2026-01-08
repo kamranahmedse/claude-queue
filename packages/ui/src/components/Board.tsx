@@ -14,18 +14,23 @@ import {
   type CollisionDetection,
 } from "@dnd-kit/core";
 import { listTasksOptions, useCreateTask, useMoveTask, useDeleteAllTasks, useTasksRefetchInterval } from "~/queries/tasks";
-import type { Task, TaskStatus } from "~/types";
+import { listTemplatesOptions, useCreateTemplate, useMoveTemplate, useUpdateTemplate } from "~/queries/templates";
+import type { Task, TaskStatus, Template } from "~/types";
 import { COLUMNS } from "~/types";
 import { Column } from "./Column";
+import { TemplateColumn } from "./TemplateColumn";
 import { TaskCard } from "./TaskCard";
+import { TemplateCard } from "./TemplateCard";
 import { TaskDetail } from "./TaskDetail";
 import { AddTaskModal } from "./AddTaskModal";
+import { AddTemplateModal } from "./AddTemplateModal";
+import { EditTemplateModal } from "./EditTemplateModal";
 
 interface BoardProps {
   projectId: string;
 }
 
-const COLUMN_IDS = new Set(["backlog", "ready", "in_progress", "done"]);
+const COLUMN_IDS = new Set(["templates", "backlog", "ready", "in_progress", "done"]);
 
 const collisionDetection: CollisionDetection = (args) => {
   const pointerCollisions = pointerWithin(args);
@@ -73,25 +78,67 @@ function reorderTasks(tasks: Task[], taskId: string, targetStatus: TaskStatus, t
   });
 }
 
+function reorderTemplates(templates: Template[], templateId: string, targetPosition: number): Template[] {
+  const template = templates.find((t) => t.id === templateId);
+  if (!template) {
+    return templates;
+  }
+
+  const oldPosition = template.position;
+
+  return templates.map((t) => {
+    if (t.id === templateId) {
+      return { ...t, position: targetPosition };
+    }
+
+    if (targetPosition > oldPosition) {
+      if (t.position > oldPosition && t.position <= targetPosition) {
+        return { ...t, position: t.position - 1 };
+      }
+    } else if (targetPosition < oldPosition) {
+      if (t.position >= targetPosition && t.position < oldPosition) {
+        return { ...t, position: t.position + 1 };
+      }
+    }
+
+    return t;
+  });
+}
+
 export function Board(props: BoardProps) {
   const { projectId } = props;
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [activeTemplate, setActiveTemplate] = useState<Template | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [addTaskStatus, setAddTaskStatus] = useState<TaskStatus | null>(null);
+  const [addTaskFromTemplate, setAddTaskFromTemplate] = useState<Template | null>(null);
+  const [showAddTemplate, setShowAddTemplate] = useState(false);
   const [optimisticTasks, setOptimisticTasks] = useState<Task[] | null>(null);
+  const [optimisticTemplates, setOptimisticTemplates] = useState<Template[] | null>(null);
   const [overInfo, setOverInfo] = useState<{ status: TaskStatus; position: number } | null>(null);
+  const [templateOverInfo, setTemplateOverInfo] = useState<{ position: number } | null>(null);
+  const [templateDropTarget, setTemplateDropTarget] = useState<TaskStatus | null>(null);
 
   const refetchInterval = useTasksRefetchInterval();
   const { data: serverTasks = [], isLoading } = useQuery({
     ...listTasksOptions(projectId),
     refetchInterval,
   });
+  const { data: serverTemplates = [], isLoading: isLoadingTemplates } = useQuery({
+    ...listTemplatesOptions(projectId),
+    refetchInterval: 5000,
+  });
   const createTask = useCreateTask(projectId);
   const moveTask = useMoveTask();
   const deleteAllTasks = useDeleteAllTasks(projectId);
+  const createTemplate = useCreateTemplate(projectId);
+  const updateTemplate = useUpdateTemplate();
+  const moveTemplate = useMoveTemplate();
 
   const tasks = optimisticTasks ?? serverTasks;
+  const templates = optimisticTemplates ?? serverTemplates;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -124,6 +171,12 @@ export function Board(props: BoardProps) {
     const task = tasks.find((t) => t.id === event.active.id);
     if (task) {
       setActiveTask(task);
+      return;
+    }
+
+    const template = templates.find((t) => t.id === event.active.id);
+    if (template) {
+      setActiveTemplate(template);
     }
   };
 
@@ -131,6 +184,33 @@ export function Board(props: BoardProps) {
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
+      return;
+    }
+
+    const draggedTemplate = serverTemplates.find((t) => t.id === active.id);
+    if (draggedTemplate) {
+      const overTemplate = serverTemplates.find((t) => t.id === over.id);
+      if (overTemplate) {
+        const overIndex = serverTemplates.findIndex((t) => t.id === over.id);
+        setTemplateOverInfo({ position: overIndex });
+        setTemplateDropTarget(null);
+
+        if (draggedTemplate.position !== overIndex) {
+          const newTemplates = reorderTemplates(serverTemplates, draggedTemplate.id, overIndex);
+          setOptimisticTemplates(newTemplates);
+        }
+      } else {
+        const targetStatus = over.id as string;
+        if (targetStatus === "backlog" || targetStatus === "ready") {
+          setTemplateDropTarget(targetStatus);
+          setTemplateOverInfo(null);
+          setOptimisticTemplates(null);
+        } else {
+          setTemplateDropTarget(null);
+          setTemplateOverInfo(null);
+          setOptimisticTemplates(null);
+        }
+      }
       return;
     }
 
@@ -167,6 +247,53 @@ export function Board(props: BoardProps) {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active } = event;
+
+    const draggedTemplate = serverTemplates.find((t) => t.id === active.id);
+    if (draggedTemplate) {
+      if (templateDropTarget) {
+        setActiveTemplate(null);
+        setTemplateOverInfo(null);
+        setOptimisticTemplates(null);
+        setAddTaskStatus(templateDropTarget);
+        setAddTaskFromTemplate(draggedTemplate);
+        setTemplateDropTarget(null);
+        return;
+      }
+
+      if (!templateOverInfo) {
+        setActiveTemplate(null);
+        setOptimisticTemplates(null);
+        setTemplateDropTarget(null);
+        return;
+      }
+
+      const { position: targetPosition } = templateOverInfo;
+
+      if (draggedTemplate.position === targetPosition) {
+        setActiveTemplate(null);
+        setTemplateOverInfo(null);
+        setOptimisticTemplates(null);
+        setTemplateDropTarget(null);
+        return;
+      }
+
+      setActiveTemplate(null);
+      setTemplateOverInfo(null);
+      setTemplateDropTarget(null);
+
+      moveTemplate.mutate(
+        {
+          templateId: draggedTemplate.id,
+          position: targetPosition,
+        },
+        {
+          onSettled: () => {
+            setOptimisticTemplates(null);
+          },
+        }
+      );
+      return;
+    }
 
     if (!overInfo) {
       setActiveTask(null);
@@ -217,8 +344,12 @@ export function Board(props: BoardProps) {
 
   const handleDragCancel = () => {
     setActiveTask(null);
+    setActiveTemplate(null);
     setOverInfo(null);
+    setTemplateOverInfo(null);
+    setTemplateDropTarget(null);
     setOptimisticTasks(null);
+    setOptimisticTemplates(null);
   };
 
   const handleAddTask = (title: string, description: string) => {
@@ -228,12 +359,41 @@ export function Board(props: BoardProps) {
     createTask.mutate(
       { title, description: description || undefined, status: addTaskStatus },
       {
-        onSuccess: () => setAddTaskStatus(null),
+        onSuccess: () => {
+          setAddTaskStatus(null);
+          setAddTaskFromTemplate(null);
+        },
       }
     );
   };
 
-  if (isLoading) {
+  const handleCloseAddTask = () => {
+    setAddTaskStatus(null);
+    setAddTaskFromTemplate(null);
+  };
+
+  const handleAddTemplate = (title: string, description: string) => {
+    createTemplate.mutate(
+      { title, description: description || undefined },
+      {
+        onSuccess: () => setShowAddTemplate(false),
+      }
+    );
+  };
+
+  const handleUpdateTemplate = (title: string, description: string) => {
+    if (!editingTemplate) {
+      return;
+    }
+    updateTemplate.mutate(
+      { templateId: editingTemplate.id, title, description: description || undefined },
+      {
+        onSuccess: () => setEditingTemplate(null),
+      }
+    );
+  };
+
+  if (isLoading || isLoadingTemplates) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-sm text-zinc-500">Loading tasks...</div>
@@ -242,7 +402,7 @@ export function Board(props: BoardProps) {
   }
 
   return (
-    <>
+    <div className="flex-1 flex flex-col min-h-0">
       <DndContext
         sensors={sensors}
         collisionDetection={collisionDetection}
@@ -251,32 +411,47 @@ export function Board(props: BoardProps) {
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-4 p-4 overflow-x-auto">
-          {COLUMNS.map((column) => (
-            <Column
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              tasks={tasksByStatus[column.id]}
-              onTaskClick={setSelectedTask}
-              onAddClick={
-                column.id === "backlog" || column.id === "ready"
-                  ? () => setAddTaskStatus(column.id)
-                  : undefined
-              }
-              onDeleteAll={
-                column.id !== "in_progress"
-                  ? () => deleteAllTasks.mutate(column.id)
-                  : undefined
-              }
-              isDeleting={deleteAllTasks.isPending}
-            />
+        <div className="flex-1 flex pt-0 pb-4 px-4 overflow-x-auto">
+          <TemplateColumn
+            templates={templates}
+            onTemplateClick={setEditingTemplate}
+            onAddClick={() => setShowAddTemplate(true)}
+          />
+          <div className="w-px bg-zinc-800 mx-3 self-stretch" />
+          {COLUMNS.map((column, index) => (
+            <div key={column.id} className="flex">
+              <Column
+                id={column.id}
+                title={column.title}
+                tasks={tasksByStatus[column.id]}
+                onTaskClick={setSelectedTask}
+                onAddClick={
+                  column.id === "backlog" || column.id === "ready"
+                    ? () => setAddTaskStatus(column.id)
+                    : undefined
+                }
+                onDeleteAll={
+                  column.id !== "in_progress"
+                    ? () => deleteAllTasks.mutate(column.id)
+                    : undefined
+                }
+                isDeleting={deleteAllTasks.isPending}
+              />
+              {index < COLUMNS.length - 1 && (
+                <div className="w-px bg-zinc-800 mx-3 self-stretch" />
+              )}
+            </div>
           ))}
         </div>
         <DragOverlay dropAnimation={null}>
           {activeTask && (
             <div className="rotate-3 opacity-90">
               <TaskCard task={activeTask} onClick={() => {}} />
+            </div>
+          )}
+          {activeTemplate && (
+            <div className="rotate-3 opacity-90">
+              <TemplateCard template={activeTemplate} onClick={() => {}} />
             </div>
           )}
         </DragOverlay>
@@ -289,11 +464,29 @@ export function Board(props: BoardProps) {
       {addTaskStatus && (
         <AddTaskModal
           status={addTaskStatus}
-          onClose={() => setAddTaskStatus(null)}
+          initialTemplate={addTaskFromTemplate}
+          onClose={handleCloseAddTask}
           onSubmit={handleAddTask}
           isLoading={createTask.isPending}
         />
       )}
-    </>
+
+      {showAddTemplate && (
+        <AddTemplateModal
+          onClose={() => setShowAddTemplate(false)}
+          onSubmit={handleAddTemplate}
+          isLoading={createTemplate.isPending}
+        />
+      )}
+
+      {editingTemplate && (
+        <EditTemplateModal
+          template={editingTemplate}
+          onClose={() => setEditingTemplate(null)}
+          onSubmit={handleUpdateTemplate}
+          isLoading={updateTemplate.isPending}
+        />
+      )}
+    </div>
   );
 }

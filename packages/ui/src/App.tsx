@@ -4,12 +4,23 @@ import { Toaster } from "sonner";
 import { listProjectsOptions } from "~/queries/projects";
 import { Header } from "~/components/Header";
 import { Board } from "~/components/Board";
+import { HelpDialog } from "~/components/HelpDialog";
 import { CopyButton } from "~/components/CopyButton";
+
+const HELP_SEEN_KEY = "claude-kanban-help-seen";
 
 export function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(() => {
+    return !localStorage.getItem(HELP_SEEN_KEY);
+  });
 
   const { data: projects = [], isLoading } = useQuery(listProjectsOptions());
+
+  const handleCloseHelp = () => {
+    setShowHelp(false);
+    localStorage.setItem(HELP_SEEN_KEY, "true");
+  };
 
   useEffect(() => {
     if (projects.length > 0 && !selectedProjectId) {
@@ -77,8 +88,10 @@ export function App() {
         project={selectedProject}
         projects={projects}
         onProjectChange={handleProjectChange}
+        onHelpClick={() => setShowHelp(true)}
       />
       {selectedProjectId && <Board projectId={selectedProjectId} />}
+      {showHelp && <HelpDialog onClose={handleCloseHelp} />}
     </div>
   );
 }

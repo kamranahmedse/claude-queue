@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Trash2, Bot, User, Send, Pencil, Check, Eye } from "lucide-react";
 import { taskDetailsOptions, useAddComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
+import { formatRelativeTime } from "~/hooks/useRelativeTime";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { ConfirmDialog } from "./ConfirmDialog";
 import type { Task } from "~/types";
 
 interface TaskDetailProps {
@@ -63,25 +65,6 @@ export function TaskDetail(props: TaskDetailProps) {
         onSuccess: () => setIsEditing(false),
       }
     );
-  };
-
-  const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-
-    if (minutes < 1) {
-      return "just now";
-    }
-    if (minutes < 60) {
-      return `${minutes}m ago`;
-    }
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-      return `${hours}h ago`;
-    }
-    return date.toLocaleDateString();
   };
 
   const comments = taskDetails?.comments || [];
@@ -196,7 +179,7 @@ export function TaskDetail(props: TaskDetailProps) {
                       {c.author === "claude" ? "Claude" : "You"}
                     </span>
                     <span className="text-xs text-zinc-600">
-                      {formatTime(c.created_at)}
+                      {formatRelativeTime(c.created_at)}
                     </span>
                     {c.author === "user" && c.seen === true && (
                       <span className="flex items-center gap-1 text-xs text-green-500" title="Claude has seen this comment">
@@ -242,35 +225,14 @@ export function TaskDetail(props: TaskDetailProps) {
       </div>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setShowDeleteConfirm(false)}
-          />
-          <div className="relative w-full max-w-sm mx-4 bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <h3 className="text-lg font-medium text-zinc-100 mb-2">
-              Delete task?
-            </h3>
-            <p className="text-sm text-zinc-400 mb-5">
-              This action cannot be undone.
-            </p>
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleteTask.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors"
-              >
-                {deleteTask.isPending ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="Delete task?"
+          message="This action cannot be undone."
+          confirmLabel="Delete"
+          isLoading={deleteTask.isPending}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       )}
     </>
   );

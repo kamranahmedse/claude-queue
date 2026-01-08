@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import projectsRouter from "./api/projects.js";
 import tasksRouter from "./api/tasks.js";
 import commentsRouter from "./api/comments.js";
+import templatesRouter from "./api/templates.js";
 import healthRouter from "./api/health.js";
 import { closeDb } from "./db/index.js";
 import { log, logRequest } from "./logger.js";
@@ -35,6 +36,7 @@ export function createServer(port = 3333) {
   app.use("/api/projects", projectsRouter);
   app.use("/api/tasks", tasksRouter);
   app.use("/api/comments", commentsRouter);
+  app.use("/api/templates", templatesRouter);
   app.use("/health", healthRouter);
 
   const uiPath = join(__dirname, "../../ui/dist");

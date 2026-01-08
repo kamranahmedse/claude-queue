@@ -34,3 +34,12 @@ export interface Comment {
 export interface TaskWithComments extends Task {
   comments: Comment[];
 }
+
+export interface Template {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string | null;
+  position: number;
+  created_at: string;
+}

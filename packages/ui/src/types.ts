@@ -41,3 +41,12 @@ export const COLUMNS: { id: TaskStatus; title: string }[] = [
   { id: "in_progress", title: "In Progress" },
   { id: "done", title: "Done" },
 ];
+
+export interface Template {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string | null;
+  position: number;
+  created_at: string;
+}
