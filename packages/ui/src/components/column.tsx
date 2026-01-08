@@ -50,7 +50,7 @@ export function Column(props: ColumnProps) {
   return (
     <>
       <div className="flex-1 min-w-[280px] max-w-[320px] select-none flex flex-col">
-        <div className="z-10 bg-zinc-950 py-3 px-1">
+        <div className="sticky top-0 z-10 bg-zinc-950 py-3 px-1">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-zinc-400">{title}</h3>
             <div className="flex items-center gap-2">

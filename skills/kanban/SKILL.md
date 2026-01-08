@@ -46,6 +46,23 @@ Repeat continuously:
 - Always commit after completing a task
 - If user asks to "defer" or "skip" a task, move it to **backlog** (not ready) so it won't be picked up again automatically
 
+## Planning/Discussion Tasks
+
+Some tasks are not direct implementation requests but rather planning, discussion, or feedback requests. Examples:
+- "What do you think about X approach?"
+- "Can you plan how to implement Y?"
+- "Should we use A or B for this feature?"
+- "Review and suggest improvements for Z"
+- Tasks asking for your opinion, recommendation, or analysis
+
+For these tasks:
+1. **Don't complete immediately** - Don't just provide your answer and move to Done
+2. **Mark as blocked**: After providing your analysis/plan/recommendation, call `kanban_set_blocked` with something like "Waiting for your feedback on the proposed approach"
+3. **Wait for reply**: Call `kanban_wait_for_reply` to let the user respond
+4. **Then complete**: Once user confirms or provides direction, complete the task
+
+This ensures the user gets a chance to review and respond to your suggestions before the task is considered done.
+
 ## Action Comments
 
 User can trigger actions via the UI that leave special comments. When checking comments, look for these patterns:

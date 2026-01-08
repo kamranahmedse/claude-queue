@@ -78,7 +78,7 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col">
+    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
       <Toaster
         position="top-right"
         theme="dark"

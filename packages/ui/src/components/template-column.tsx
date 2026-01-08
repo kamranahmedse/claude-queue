@@ -64,7 +64,7 @@ export function TemplateColumn(props: TemplateColumnProps) {
 
   return (
     <div className="flex-1 min-w-[280px] max-w-[320px] select-none flex flex-col">
-      <div className="z-10 bg-zinc-950 flex items-center justify-between py-3 px-1">
+      <div className="sticky top-0 z-10 bg-zinc-950 flex items-center justify-between py-3 px-1">
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleToggleCollapse}

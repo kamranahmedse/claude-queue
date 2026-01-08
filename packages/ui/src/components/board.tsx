@@ -413,37 +413,40 @@ export function Board(props: BoardProps) {
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex-1 flex pt-0 pb-4 px-4 overflow-x-auto">
-          <TemplateColumn
-            templates={templates}
-            onTemplateClick={setEditingTemplate}
-            onAddClick={() => setShowAddTemplate(true)}
-          />
-          <div className="w-px bg-zinc-800 mx-3 self-stretch" />
-          {COLUMNS.map((column, index) => (
-            <div key={column.id} className="flex">
-              <Column
-                id={column.id}
-                title={column.title}
-                tasks={tasksByStatus[column.id]}
-                onTaskClick={setSelectedTask}
-                onAddClick={
-                  column.id === "backlog" || column.id === "ready"
-                    ? () => setAddTaskStatus(column.id)
-                    : undefined
-                }
-                onDeleteAll={
-                  column.id !== "in_progress"
-                    ? () => deleteAllTasks.mutate(column.id)
-                    : undefined
-                }
-                isDeleting={deleteAllTasks.isPending}
+        <div className="flex-1 pt-0 pb-4 px-4 overflow-auto">
+          <div className="grid grid-cols-[auto_repeat(4,minmax(280px,320px))] gap-0 items-stretch min-h-full w-max">
+            <div className="border-r border-zinc-800 pr-3 mr-3 flex flex-col">
+              <TemplateColumn
+                templates={templates}
+                onTemplateClick={setEditingTemplate}
+                onAddClick={() => setShowAddTemplate(true)}
               />
-              {index < COLUMNS.length - 1 && (
-                <div className="w-px bg-zinc-800 mx-3 self-stretch" />
-              )}
             </div>
-          ))}
+            {COLUMNS.map((column, index) => (
+              <div
+                key={column.id}
+                className={`flex flex-col ${index < COLUMNS.length - 1 ? "border-r border-zinc-800 pr-3 mr-3" : ""}`}
+              >
+                <Column
+                  id={column.id}
+                  title={column.title}
+                  tasks={tasksByStatus[column.id]}
+                  onTaskClick={setSelectedTask}
+                  onAddClick={
+                    column.id === "backlog" || column.id === "ready"
+                      ? () => setAddTaskStatus(column.id)
+                      : undefined
+                  }
+                  onDeleteAll={
+                    column.id !== "in_progress"
+                      ? () => deleteAllTasks.mutate(column.id)
+                      : undefined
+                  }
+                  isDeleting={deleteAllTasks.isPending}
+                />
+              </div>
+            ))}
+          </div>
         </div>
         <DragOverlay dropAnimation={null}>
           {activeTask && (
