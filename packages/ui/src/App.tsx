@@ -91,7 +91,7 @@ export function App() {
         onHelpClick={() => setShowHelp(true)}
       />
       {selectedProjectId && <Board projectId={selectedProjectId} />}
-      {showHelp && <HelpDialog onClose={handleCloseHelp} />}
+      {showHelp && <HelpDialog projectId={selectedProjectId} onClose={handleCloseHelp} />}
     </div>
   );
 }

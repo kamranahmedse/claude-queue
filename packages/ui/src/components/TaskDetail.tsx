@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Trash2, Bot, User, Send, Pencil, Check, Eye } from "lucide-react";
-import { taskDetailsOptions, useAddComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
+import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
 import { formatRelativeTime } from "~/hooks/useRelativeTime";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -23,6 +23,7 @@ export function TaskDetail(props: TaskDetailProps) {
 
   const { data: taskDetails } = useQuery(taskDetailsOptions(task.id));
   const addComment = useAddComment(task.id);
+  const deleteComment = useDeleteComment(task.id);
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
 
@@ -167,7 +168,7 @@ export function TaskDetail(props: TaskDetailProps) {
               {comments.map((c) => (
                 <div
                   key={c.id}
-                  className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg"
+                  className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg group"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     {c.author === "claude" ? (
@@ -185,6 +186,16 @@ export function TaskDetail(props: TaskDetailProps) {
                       <span className="flex items-center gap-1 text-xs text-green-500" title="Claude has seen this comment">
                         <Eye className="w-3 h-3" />
                       </span>
+                    )}
+                    {c.author === "user" && c.seen === false && (
+                      <button
+                        onClick={() => deleteComment.mutate(c.id)}
+                        disabled={deleteComment.isPending}
+                        className="ml-auto opacity-0 group-hover:opacity-100 p-1 text-zinc-600 hover:text-red-400 rounded transition-all disabled:opacity-50"
+                        title="Delete comment"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     )}
                   </div>
                   <MarkdownRenderer content={c.content} />

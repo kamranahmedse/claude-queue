@@ -3,6 +3,7 @@ import { X, Rocket, GitBranch, MessageCircle, Lightbulb, Inbox, CheckCircle2, Cl
 import { CopyButton } from "./CopyButton";
 
 interface HelpDialogProps {
+  projectId: string | null;
   onClose: () => void;
 }
 
@@ -17,7 +18,14 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "tips", label: "Tips", icon: <Lightbulb className="w-4 h-4" /> },
 ];
 
-function OverviewTab() {
+interface OverviewTabProps {
+  projectId: string | null;
+}
+
+function OverviewTab(props: OverviewTabProps) {
+  const { projectId } = props;
+  const fullCommand = projectId ? `${SKILL_COMMAND} ${projectId}` : `${SKILL_COMMAND} <project-id>`;
+
   return (
     <div className="space-y-5">
       <section>
@@ -42,13 +50,15 @@ function OverviewTab() {
         </ol>
         <div className="mt-3 ml-9 flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700">
           <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2.5">
-            {SKILL_COMMAND} {"<project-id>"}
+            {fullCommand}
           </code>
-          <CopyButton text={`${SKILL_COMMAND} <project-id>`} className="mr-2" />
+          <CopyButton text={fullCommand} className="mr-2" />
         </div>
-        <p className="mt-2 ml-9 text-xs text-zinc-500">
-          Find your project ID in the URL or header dropdown
-        </p>
+        {!projectId && (
+          <p className="mt-2 ml-9 text-xs text-zinc-500">
+            Find your project ID in the URL or header
+          </p>
+        )}
       </section>
     </div>
   );
@@ -158,7 +168,7 @@ function TipsTab() {
 }
 
 export function HelpDialog(props: HelpDialogProps) {
-  const { onClose } = props;
+  const { projectId, onClose } = props;
   const [activeTab, setActiveTab] = useState<TabId>("overview");
 
   return (
@@ -197,8 +207,8 @@ export function HelpDialog(props: HelpDialogProps) {
             ))}
           </nav>
 
-          <div className="flex-1 p-4 overflow-y-auto min-h-[340px]">
-            {activeTab === "overview" && <OverviewTab />}
+          <div className="flex-1 p-4 overflow-y-auto min-h-[550px]">
+            {activeTab === "overview" && <OverviewTab projectId={projectId} />}
             {activeTab === "workflow" && <WorkflowTab />}
             {activeTab === "interaction" && <InteractionTab />}
             {activeTab === "tips" && <TipsTab />}

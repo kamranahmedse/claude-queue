@@ -1,10 +1,41 @@
 import { Router } from "express";
-import { customAlphabet } from "nanoid";
+import { customAlphabet, nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
 import type { Project } from "../types.js";
 
 const router = Router();
 const generateId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 4);
+
+const DEFAULT_TEMPLATES = [
+  { title: "Bug fix", description: "Investigate and fix a reported bug. Include root cause analysis." },
+  { title: "Add tests", description: "Write unit/integration tests for existing functionality." },
+  { title: "Refactor", description: "Improve code structure without changing behavior. Focus on readability and maintainability." },
+  { title: "Code review", description: "Review recent changes for bugs, performance issues, and best practices." },
+  { title: "Documentation", description: "Add or update documentation, comments, or README files." },
+];
+
+function seedDefaultTemplates(projectId: string): void {
+  const db = getDb();
+
+  const existingCount = db
+    .prepare("SELECT COUNT(*) as count FROM templates WHERE project_id = ?")
+    .get(projectId) as { count: number };
+
+  if (existingCount.count > 0) {
+    return;
+  }
+
+  const insertStmt = db.prepare(`
+    INSERT INTO templates (id, project_id, title, description, position)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  db.transaction(() => {
+    DEFAULT_TEMPLATES.forEach((template, index) => {
+      insertStmt.run(nanoid(), projectId, template.title, template.description, index);
+    });
+  })();
+}
 
 router.get("/", (_req, res) => {
   const db = getDb();
@@ -50,6 +81,8 @@ router.post("/", (req, res) => {
   const id = `kbn-${generateId()}`;
   const stmt = db.prepare("INSERT INTO projects (id, path, name) VALUES (?, ?, ?)");
   stmt.run(id, path, name);
+
+  seedDefaultTemplates(id);
 
   const project = db.prepare("SELECT * FROM projects WHERE id = ?").get(id) as Project;
   res.status(201).json(project);

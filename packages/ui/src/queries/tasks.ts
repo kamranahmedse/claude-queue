@@ -165,3 +165,15 @@ export function useAddComment(taskId: string) {
     },
   });
 }
+
+export function useDeleteComment(taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (commentId: string) =>
+      httpDelete<void>(`/comments/${commentId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["task", taskId] });
+    },
+  });
+}

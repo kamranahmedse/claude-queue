@@ -74,6 +74,26 @@ router.post("/task/:taskId", (req, res) => {
   res.status(201).json(rowToComment(comment));
 });
 
+router.delete("/:commentId", (req, res) => {
+  const db = getDb();
+  const commentId = req.params.commentId;
+
+  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as any | undefined;
+
+  if (!comment) {
+    res.status(404).json({ error: "Comment not found" });
+    return;
+  }
+
+  if (comment.seen) {
+    res.status(400).json({ error: "Cannot delete a comment that has been seen" });
+    return;
+  }
+
+  db.prepare("DELETE FROM comments WHERE id = ?").run(commentId);
+  res.status(204).send();
+});
+
 router.patch("/:commentId/seen", (req, res) => {
   const db = getDb();
   const commentId = req.params.commentId;

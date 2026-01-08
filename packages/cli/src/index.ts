@@ -129,25 +129,28 @@ Watch the kanban board and work through tasks autonomously.
 
 ## Main Loop
 
-Repeat continuously until no more ready tasks:
+Repeat continuously:
 
 1. **Check for tasks**: Call \`kanban_get_tasks\` with status "ready"
-2. **Claim a task**: Call \`kanban_claim_task\` to move it to in_progress
-3. **Read existing comments**: Call \`kanban_check_comments\` to see any context or instructions the user may have already added
-4. **Work on the task**:
+2. **If no ready tasks**:
+   - Poll every 30 seconds for up to 3 minutes (6 polls)
+   - If still no tasks after 3 minutes, inform user and stop
+3. **Claim a task**: Call \`kanban_claim_task\` to move it to in_progress
+4. **Read existing comments**: Call \`kanban_check_comments\` to see any context or instructions the user may have already added
+5. **Work on the task**:
    - Update activity with \`kanban_update_activity\` as you work
    - Do the actual work - write code, fix bugs, etc.
    - **Check for user feedback**: Call \`kanban_check_comments\` periodically (before major steps) to see if user left new comments
    - If there are new comments, read them and accommodate the feedback in your work
-5. **If blocked**:
+6. **If blocked**:
    - Call \`kanban_set_blocked\` with your question
    - Call \`kanban_wait_for_reply\` to wait for response
    - If \`{ "deleted": true }\`, run \`git reset --hard HEAD\` and go to step 1
    - If \`{ "timeout": true }\`, call \`kanban_wait_for_reply\` again
-6. **Final check**: Before completing, call \`kanban_check_comments\` one last time to ensure no new feedback was left during your work
-7. **Add summary** (REQUIRED): ALWAYS add a completion summary using \`kanban_add_comment\` before completing. Example: "Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
-8. **Complete**: Call \`kanban_complete_task\`, then commit changes
-9. **Repeat** from step 1
+7. **Final check**: Before completing, call \`kanban_check_comments\` one last time to ensure no new feedback was left during your work
+8. **Add summary** (REQUIRED): ALWAYS add a completion summary using \`kanban_add_comment\` before completing. Example: "✅ Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
+9. **Complete**: Call \`kanban_complete_task\`, then commit changes
+10. **Repeat** from step 1
 
 ## Rules
 
@@ -155,7 +158,6 @@ Repeat continuously until no more ready tasks:
 - Always update activity so user knows what you're doing
 - If task deleted while working, discard changes with \`git reset --hard HEAD\`
 - Always commit after completing a task
-- If no ready tasks, inform user and stop
 - If user asks to "defer" or "skip" a task, move it to **backlog** (not ready) so it won't be picked up again automatically
 
 ## Action Comments
