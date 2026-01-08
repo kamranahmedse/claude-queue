@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 
 const SOUND_ENABLED_KEY = "claude-kanban-sound-enabled";
 
-type SoundType = "complete" | "question";
+type SoundType = "complete" | "question" | "start";
 
 const soundFiles: Record<SoundType, string> = {
-  complete: "/sounds/complete.aiff",
-  question: "/sounds/question.aiff",
+  complete: "/sounds/complete.mp3",
+  question: "/sounds/question.mp3",
+  start: "/sounds/start.mp3",
 };
 
 function getSoundEnabled(): boolean {

@@ -33,6 +33,11 @@ export function useTaskNotifications(tasks: Task[]): void {
           break;
         }
 
+        if (task.status === "in_progress" && prevTask.status === "ready") {
+          playSound("start");
+          break;
+        }
+
         if (task.blocked && !prevTask.blocked) {
           playSound("question");
           break;

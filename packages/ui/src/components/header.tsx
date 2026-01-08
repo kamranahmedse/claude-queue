@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { HelpCircle, Wrench, Volume2, VolumeX } from "lucide-react";
+import { HelpCircle, Wrench, Volume2, VolumeX, BarChart3 } from "lucide-react";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
 import { useSoundEnabled } from "~/hooks/use-sound";
 import { ClaudeStatus } from "./claude-status";
@@ -14,10 +14,11 @@ interface HeaderProps {
   onProjectChange: (projectId: string) => void;
   onHelpClick: () => void;
   onTroubleshootClick: () => void;
+  onStatsClick: () => void;
 }
 
 export function Header(props: HeaderProps) {
-  const { project, projects, onProjectChange, onHelpClick, onTroubleshootClick } = props;
+  const { project, projects, onProjectChange, onHelpClick, onTroubleshootClick, onStatsClick } = props;
 
   const refetchInterval = useTasksRefetchInterval();
   const { data: tasks = [] } = useQuery({
@@ -55,6 +56,15 @@ export function Header(props: HeaderProps) {
             </code>
             <CopyButton text={`${SKILL_COMMAND} ${project.id}`} />
           </div>
+        )}
+        {project && (
+          <button
+            onClick={onStatsClick}
+            className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+            title="Project Statistics"
+          >
+            <BarChart3 className="w-4 h-4" />
+          </button>
         )}
         <button
           onClick={() => setSoundEnabled(!soundEnabled)}

@@ -10,6 +10,7 @@ import tasksRouter from "./api/tasks.js";
 import commentsRouter from "./api/comments.js";
 import templatesRouter from "./api/templates.js";
 import healthRouter from "./api/health.js";
+import maintenanceRouter from "./api/maintenance.js";
 import { closeDb } from "./db/index.js";
 import { log, logRequest } from "./logger.js";
 
@@ -38,6 +39,7 @@ export function createServer(port = 3333): { app: Express; server: Server } {
   app.use("/api/tasks", tasksRouter);
   app.use("/api/comments", commentsRouter);
   app.use("/api/templates", templatesRouter);
+  app.use("/api/maintenance", maintenanceRouter);
   app.use("/health", healthRouter);
 
   // Find UI path - works for both npm package and development

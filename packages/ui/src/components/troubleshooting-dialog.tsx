@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { X, Activity, Puzzle, Server, AlertTriangle, CheckCircle, XCircle, Clock, ChevronDown } from "lucide-react";
+import { X, Activity, Puzzle, Server, AlertTriangle, CheckCircle, XCircle, Clock, ChevronDown, Wrench, Trash2, Database, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { httpDelete, httpGet, httpPost } from "~/lib/http";
 import { CopyButton } from "./copy-button";
+import { ConfirmDialog } from "./confirm-dialog";
 import type { Project, Task } from "~/types";
 
 interface TroubleshootingDialogProps {
@@ -13,13 +16,14 @@ const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
 const MCP_NAME = import.meta.env.DEV ? "claude-kanban-dev" : "claude-kanban";
 const PORT = import.meta.env.DEV ? "3334" : "3333";
 
-type TabId = "status" | "skills" | "mcp" | "issues";
+type TabId = "status" | "skills" | "mcp" | "issues" | "actions";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "status", label: "Status", icon: <Activity className="w-4 h-4" /> },
   { id: "skills", label: "Skills", icon: <Puzzle className="w-4 h-4" /> },
   { id: "mcp", label: "MCP Server", icon: <Server className="w-4 h-4" /> },
   { id: "issues", label: "Common Issues", icon: <AlertTriangle className="w-4 h-4" /> },
+  { id: "actions", label: "Actions", icon: <Wrench className="w-4 h-4" /> },
 ];
 
 interface StatusItemProps {
@@ -282,6 +286,228 @@ function AccordionItem(props: AccordionItemProps) {
   );
 }
 
+interface MaintenanceStats {
+  projects: number;
+  tasks: {
+    total: number;
+    byStatus: Record<string, number>;
+  };
+  comments: number;
+  activities: number;
+  templates: number;
+}
+
+interface ActionButtonProps {
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  variant: "danger" | "warning" | "info";
+  onClick: () => void;
+  disabled?: boolean;
+}
+
+function ActionButton(props: ActionButtonProps) {
+  const { label, description, icon, variant, onClick, disabled } = props;
+
+  const variantClasses = {
+    danger: "border-red-500/30 bg-red-900/10 hover:bg-red-900/20 text-red-400",
+    warning: "border-yellow-500/30 bg-yellow-900/10 hover:bg-yellow-900/20 text-yellow-400",
+    info: "border-zinc-500/30 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full flex items-start gap-3 p-3 rounded-lg border transition-colors text-left ${variantClasses[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+    >
+      <div className="shrink-0 mt-0.5">{icon}</div>
+      <div>
+        <div className="text-sm font-medium">{label}</div>
+        <div className="text-xs opacity-70 mt-0.5">{description}</div>
+      </div>
+    </button>
+  );
+}
+
+function ActionsTab() {
+  const queryClient = useQueryClient();
+  const [stats, setStats] = useState<MaintenanceStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    message: string;
+    action: () => Promise<void>;
+  } | null>(null);
+
+  const loadStats = async () => {
+    const data = await httpGet<MaintenanceStats>("/maintenance/stats");
+    setStats(data);
+  };
+
+  const handleAction = async (action: () => Promise<void>) => {
+    setLoading(true);
+    try {
+      await action();
+      await loadStats();
+      queryClient.invalidateQueries();
+    } finally {
+      setLoading(false);
+      setConfirmAction(null);
+    }
+  };
+
+  const clearDoneTasks = () => {
+    setConfirmAction({
+      title: "Clear Done Tasks",
+      message: `This will delete all tasks in the "Done" column across all projects. This cannot be undone.`,
+      action: async () => {
+        await httpDelete("/maintenance/tasks/done");
+      },
+    });
+  };
+
+  const clearAllTasks = () => {
+    setConfirmAction({
+      title: "Clear All Tasks",
+      message: "This will delete ALL tasks from ALL projects. This cannot be undone.",
+      action: async () => {
+        await httpDelete("/maintenance/tasks/all");
+      },
+    });
+  };
+
+  const clearAllProjects = () => {
+    setConfirmAction({
+      title: "Clear All Projects",
+      message: "This will delete ALL projects and their tasks. This cannot be undone.",
+      action: async () => {
+        await httpDelete("/maintenance/projects/all");
+      },
+    });
+  };
+
+  const clearActivityLog = () => {
+    setConfirmAction({
+      title: "Clear Activity Log",
+      message: "This will delete all activity history from all tasks. This cannot be undone.",
+      action: async () => {
+        await httpDelete("/maintenance/activity/all");
+      },
+    });
+  };
+
+  const vacuumDatabase = async () => {
+    setLoading(true);
+    try {
+      await httpPost("/maintenance/vacuum", {});
+      alert("Database optimized successfully");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (stats === null) {
+    loadStats();
+    return (
+      <div className="flex items-center justify-center py-8">
+        <RefreshCw className="w-5 h-5 animate-spin text-zinc-500" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-5">
+        <section>
+          <h3 className="text-sm font-medium text-zinc-200 mb-3">Database Stats</h3>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-3 rounded-lg bg-zinc-800/50 text-center">
+              <div className="text-lg font-medium text-zinc-200">{stats.projects}</div>
+              <div className="text-xs text-zinc-500">Projects</div>
+            </div>
+            <div className="p-3 rounded-lg bg-zinc-800/50 text-center">
+              <div className="text-lg font-medium text-zinc-200">{stats.tasks.total}</div>
+              <div className="text-xs text-zinc-500">Tasks</div>
+            </div>
+            <div className="p-3 rounded-lg bg-zinc-800/50 text-center">
+              <div className="text-lg font-medium text-zinc-200">{stats.tasks.byStatus.done || 0}</div>
+              <div className="text-xs text-zinc-500">Done</div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-medium text-zinc-200 mb-3">Cleanup Actions</h3>
+          <div className="space-y-2">
+            <ActionButton
+              label="Clear Done Tasks"
+              description={`Delete all completed tasks (${stats.tasks.byStatus.done || 0} tasks)`}
+              icon={<Trash2 className="w-4 h-4" />}
+              variant="warning"
+              onClick={clearDoneTasks}
+              disabled={loading || !stats.tasks.byStatus.done}
+            />
+            <ActionButton
+              label="Clear Activity Log"
+              description={`Delete all activity history (${stats.activities} entries)`}
+              icon={<Activity className="w-4 h-4" />}
+              variant="warning"
+              onClick={clearActivityLog}
+              disabled={loading || stats.activities === 0}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-medium text-zinc-200 mb-3">Destructive Actions</h3>
+          <div className="space-y-2">
+            <ActionButton
+              label="Clear All Tasks"
+              description={`Delete all tasks from all projects (${stats.tasks.total} tasks)`}
+              icon={<Trash2 className="w-4 h-4" />}
+              variant="danger"
+              onClick={clearAllTasks}
+              disabled={loading || stats.tasks.total === 0}
+            />
+            <ActionButton
+              label="Clear All Projects"
+              description={`Delete all projects and their data (${stats.projects} projects)`}
+              icon={<Trash2 className="w-4 h-4" />}
+              variant="danger"
+              onClick={clearAllProjects}
+              disabled={loading || stats.projects === 0}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-medium text-zinc-200 mb-3">Database Maintenance</h3>
+          <ActionButton
+            label="Optimize Database"
+            description="Run VACUUM to reclaim space and optimize performance"
+            icon={<Database className="w-4 h-4" />}
+            variant="info"
+            onClick={vacuumDatabase}
+            disabled={loading}
+          />
+        </section>
+      </div>
+
+      {confirmAction && (
+        <ConfirmDialog
+          title={confirmAction.title}
+          message={confirmAction.message}
+          confirmLabel="Delete"
+          isLoading={loading}
+          onConfirm={() => handleAction(confirmAction.action)}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+    </>
+  );
+}
+
 function IssuesTab() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -393,6 +619,7 @@ export function TroubleshootingDialog(props: TroubleshootingDialogProps) {
             {activeTab === "skills" && <SkillsTab projectId={project?.id || null} />}
             {activeTab === "mcp" && <McpTab />}
             {activeTab === "issues" && <IssuesTab />}
+            {activeTab === "actions" && <ActionsTab />}
           </div>
         </div>
       </div>

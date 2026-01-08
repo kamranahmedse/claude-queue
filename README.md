@@ -177,6 +177,30 @@ claude-kanban logs
 claude-kanban logs -f
 ```
 
+### Troubleshooting
+
+```bash
+# Run diagnostic checks
+claude-kanban doctor
+
+# Run diagnostics and auto-fix issues
+claude-kanban doctor --fix
+```
+
+The `doctor` command checks:
+- Claude directory exists (`~/.claude`)
+- MCP server is configured in `~/.claude/settings.json`
+- `/kanban` skill is installed in `~/.claude/skills/`
+- Kanban data directory exists (`~/.claude-kanban`)
+- Database file exists and shows its size
+- Server is running (and shows database stats)
+- PID file validity (detects stale PID files)
+
+With `--fix`, it will automatically:
+- Create missing directories
+- Configure the MCP server
+- Install the kanban skill
+
 ## Using with Claude Code
 
 ### 1. Start the Board

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Plus, Trash2 } from "lucide-react";
+import { formatRelativeTime } from "~/hooks/use-relative-time";
 import type { Task, TaskStatus } from "~/types";
 import { TaskCard } from "./task-card";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -25,6 +26,20 @@ export function Column(props: ColumnProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id });
 
+  const lastActivity = useMemo(() => {
+    if (tasks.length === 0) {
+      return null;
+    }
+
+    let mostRecent = tasks[0].updated_at;
+    for (const task of tasks) {
+      if (task.updated_at > mostRecent) {
+        mostRecent = task.updated_at;
+      }
+    }
+    return mostRecent;
+  }, [tasks]);
+
   const handleDeleteAll = () => {
     if (onDeleteAll) {
       onDeleteAll();
@@ -35,20 +50,27 @@ export function Column(props: ColumnProps) {
   return (
     <>
       <div className="flex-1 min-w-[280px] max-w-[320px] select-none flex flex-col">
-        <div className="z-10 bg-zinc-950 flex items-center justify-between py-3 px-1">
-          <h3 className="text-sm font-medium text-zinc-400">{title}</h3>
-          <div className="flex items-center gap-2">
-            {tasks.length > 0 && onDeleteAll && (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-1 text-zinc-600 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
-                title="Clear all tasks"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <span className="text-xs text-zinc-600">{tasks.length}</span>
+        <div className="z-10 bg-zinc-950 py-3 px-1">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-zinc-400">{title}</h3>
+            <div className="flex items-center gap-2">
+              {tasks.length > 0 && onDeleteAll && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-1 text-zinc-600 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                  title="Clear all tasks"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <span className="text-xs text-zinc-600">{tasks.length}</span>
+            </div>
           </div>
+          {lastActivity && (
+            <p className="text-[10px] text-zinc-600 mt-0.5">
+              Last activity: {formatRelativeTime(lastActivity)}
+            </p>
+          )}
         </div>
         <div
           ref={setNodeRef}

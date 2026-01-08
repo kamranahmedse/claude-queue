@@ -7,6 +7,7 @@ import { Header } from "~/components/header";
 import { Board } from "~/components/board";
 import { HelpDialog } from "~/components/help-dialog";
 import { TroubleshootingDialog } from "~/components/troubleshooting-dialog";
+import { StatsDialog } from "~/components/stats-dialog";
 import { CopyButton } from "~/components/copy-button";
 
 const HELP_SEEN_KEY = "claude-kanban-help-seen";
@@ -17,6 +18,7 @@ export function App() {
     return !localStorage.getItem(HELP_SEEN_KEY);
   });
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
+  const [showStats, setShowStats] = useState(false);
 
   const refetchInterval = useTasksRefetchInterval();
   const { data: projects = [], isLoading } = useQuery({
@@ -94,6 +96,7 @@ export function App() {
         onProjectChange={handleProjectChange}
         onHelpClick={() => setShowHelp(true)}
         onTroubleshootClick={() => setShowTroubleshooting(true)}
+        onStatsClick={() => setShowStats(true)}
       />
       {selectedProjectId && <Board projectId={selectedProjectId} />}
       {!selectedProjectId && (
@@ -107,6 +110,12 @@ export function App() {
           project={selectedProject}
           tasks={tasks}
           onClose={() => setShowTroubleshooting(false)}
+        />
+      )}
+      {showStats && selectedProject && (
+        <StatsDialog
+          project={selectedProject}
+          onClose={() => setShowStats(false)}
         />
       )}
     </div>
