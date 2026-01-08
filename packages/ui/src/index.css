@@ -93,3 +93,8 @@ body {
   background-size: 100% 200%;
   animation: progress-shimmer 2s ease-in-out infinite;
 }
+
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Wrench } from "lucide-react";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
 import { ClaudeStatus } from "./claude-status";
 import { CopyButton } from "./copy-button";
@@ -12,10 +12,11 @@ interface HeaderProps {
   projects: Project[];
   onProjectChange: (projectId: string) => void;
   onHelpClick: () => void;
+  onTroubleshootClick: () => void;
 }
 
 export function Header(props: HeaderProps) {
-  const { project, projects, onProjectChange, onHelpClick } = props;
+  const { project, projects, onProjectChange, onHelpClick, onTroubleshootClick } = props;
 
   const refetchInterval = useTasksRefetchInterval();
   const { data: tasks = [] } = useQuery({
@@ -52,6 +53,13 @@ export function Header(props: HeaderProps) {
             <CopyButton text={`${SKILL_COMMAND} ${project.id}`} />
           </div>
         )}
+        <button
+          onClick={onTroubleshootClick}
+          className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+          title="Troubleshooting"
+        >
+          <Wrench className="w-4 h-4" />
+        </button>
         <button
           onClick={onHelpClick}
           className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"

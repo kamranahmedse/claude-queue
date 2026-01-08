@@ -3,9 +3,11 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Plus, HelpCircle } from "lucide-react";
+import { Plus, HelpCircle, LayoutTemplate, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Template } from "~/types";
 import { TemplateCard } from "./template-card";
+
+const COLLAPSED_KEY = "claude-kanban-templates-collapsed";
 
 interface TemplateColumnProps {
   templates: Template[];
@@ -16,6 +18,9 @@ interface TemplateColumnProps {
 export function TemplateColumn(props: TemplateColumnProps) {
   const { templates, onTemplateClick, onAddClick } = props;
   const [showHelp, setShowHelp] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem(COLLAPSED_KEY) === "true";
+  });
   const helpRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,10 +38,41 @@ export function TemplateColumn(props: TemplateColumnProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showHelp]);
 
+  const handleToggleCollapse = () => {
+    const newValue = !isCollapsed;
+    setIsCollapsed(newValue);
+    localStorage.setItem(COLLAPSED_KEY, String(newValue));
+  };
+
+  if (isCollapsed) {
+    return (
+      <div className="w-10 flex flex-col items-center py-3 select-none">
+        <button
+          onClick={handleToggleCollapse}
+          className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/20 rounded-lg transition-colors"
+          title="Expand templates"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+        <div className="flex-1 flex flex-col items-center justify-center gap-2">
+          <LayoutTemplate className="w-4 h-4 text-indigo-400" />
+          <span className="text-xs text-zinc-600 writing-mode-vertical">{templates.length}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 min-w-[280px] max-w-[320px] select-none flex flex-col">
       <div className="z-10 bg-zinc-950 flex items-center justify-between py-3 px-1">
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleToggleCollapse}
+            className="p-1 text-zinc-500 hover:text-indigo-400 hover:bg-indigo-900/20 rounded transition-colors"
+            title="Collapse templates"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
           <h3 className="text-sm font-medium text-indigo-400">Templates</h3>
           <div className="relative" ref={helpRef}>
             <button

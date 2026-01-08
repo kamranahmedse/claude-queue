@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { listProjectsOptions } from "~/queries/projects";
+import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
 import { Header } from "~/components/header";
 import { Board } from "~/components/board";
 import { HelpDialog } from "~/components/help-dialog";
+import { TroubleshootingDialog } from "~/components/troubleshooting-dialog";
 import { CopyButton } from "~/components/copy-button";
 
 const HELP_SEEN_KEY = "claude-kanban-help-seen";
@@ -14,8 +16,18 @@ export function App() {
   const [showHelp, setShowHelp] = useState(() => {
     return !localStorage.getItem(HELP_SEEN_KEY);
   });
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
 
-  const { data: projects = [], isLoading } = useQuery(listProjectsOptions());
+  const refetchInterval = useTasksRefetchInterval();
+  const { data: projects = [], isLoading } = useQuery({
+    ...listProjectsOptions(),
+    refetchInterval,
+  });
+  const { data: tasks = [] } = useQuery({
+    ...listTasksOptions(selectedProjectId || ""),
+    enabled: !!selectedProjectId,
+    refetchInterval,
+  });
 
   const handleCloseHelp = () => {
     setShowHelp(false);
@@ -81,6 +93,7 @@ export function App() {
         projects={projects}
         onProjectChange={handleProjectChange}
         onHelpClick={() => setShowHelp(true)}
+        onTroubleshootClick={() => setShowTroubleshooting(true)}
       />
       {selectedProjectId && <Board projectId={selectedProjectId} />}
       {!selectedProjectId && (
@@ -89,6 +102,13 @@ export function App() {
         </div>
       )}
       {showHelp && <HelpDialog projectId={selectedProjectId} onClose={handleCloseHelp} />}
+      {showTroubleshooting && (
+        <TroubleshootingDialog
+          project={selectedProject}
+          tasks={tasks}
+          onClose={() => setShowTroubleshooting(false)}
+        />
+      )}
     </div>
   );
 }

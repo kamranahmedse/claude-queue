@@ -88,8 +88,9 @@ make dev-ui          # Start only UI dev server
 make start           # Start production server (3333)
 
 # Skills
-make install-skills  # Copy skills to ~/.claude/skills/
-make watch-skills    # Auto-copy skills on file change
+make generate-skills # Generate SKILL.md from template
+make install-skills  # Generate and copy skills to ~/.claude/skills/
+make watch-skills    # Auto-regenerate and copy skills on file change
 
 # MCP
 make install-mcp     # Configure production MCP (port 3333)
@@ -123,6 +124,11 @@ claude-kanban/
 │   ├── ui/         # React + Vite + TailwindCSS
 │   ├── mcp/        # MCP server for Claude integration
 │   └── cli/        # CLI entry point (npx claude-kanban)
+├── skills/
+│   ├── SKILL.template.md  # Template for generating skills
+│   ├── generate-skills.ts # Script to generate from template
+│   ├── kanban/            # Production skill
+│   └── kanban-dev/        # Development skill
 ├── pnpm-workspace.yaml
 └── tsconfig.json
 ```
@@ -241,9 +247,12 @@ Available skills:
 If you're developing claude-kanban locally, you can manually manage skills:
 
 ```bash
-make install-skills   # Copy skills to ~/.claude/skills/
-make watch-skills     # Auto-copy skills on file change (requires fswatch)
+make generate-skills  # Regenerate skills from template
+make install-skills   # Generate and copy skills to ~/.claude/skills/
+make watch-skills     # Auto-regenerate and copy on file change (requires fswatch)
 ```
+
+Skills are generated from a single template (`skills/SKILL.template.md`) using variable substitution. This ensures both the production (`/kanban`) and development (`/kanban-dev`) skills stay in sync.
 
 ## MCP Configuration
 
