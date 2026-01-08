@@ -2,13 +2,16 @@ import { Router, type Router as RouterType } from "express";
 import { nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
 import { updateProjectHeartbeat } from "../utils/heartbeat.js";
+import { logTaskActivity } from "../utils/activity.js";
 import {
   rowToTask,
   rowToComment,
+  rowToTaskActivity,
   type TaskRow,
   type CommentRow,
+  type TaskActivityRow,
 } from "../utils/mappers.js";
-import type { TaskWithComments, TaskStatus } from "../types.js";
+import type { TaskWithActivities, TaskStatus } from "../types.js";
 
 const router: RouterType = Router();
 
@@ -43,9 +46,14 @@ router.get("/:id", (req, res) => {
     .prepare("SELECT * FROM comments WHERE task_id = ? ORDER BY created_at ASC")
     .all(req.params.id) as CommentRow[];
 
-  const result: TaskWithComments = {
+  const activitiesRaw = db
+    .prepare("SELECT * FROM task_activity WHERE task_id = ? ORDER BY created_at ASC")
+    .all(req.params.id) as TaskActivityRow[];
+
+  const result: TaskWithActivities = {
     ...rowToTask(task),
     comments: commentsRaw.map(rowToComment),
+    activities: activitiesRaw.map(rowToTaskActivity),
   };
 
   res.json(result);
@@ -80,6 +88,8 @@ router.post("/project/:projectId", (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(id, projectId, title, description || null, status, position);
 
+  logTaskActivity(id, "created", null, status);
+
   const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as TaskRow;
   res.status(201).json(rowToTask(task));
 });
@@ -113,6 +123,16 @@ router.patch("/:id", (req, res) => {
   values.push(req.params.id);
 
   db.prepare(`UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`).run(...values);
+
+  if (req.body.title !== undefined && req.body.title !== task.title) {
+    logTaskActivity(req.params.id, "title_change", task.title, req.body.title);
+  }
+  if (req.body.description !== undefined && req.body.description !== task.description) {
+    logTaskActivity(req.params.id, "description_change", task.description, req.body.description);
+  }
+  if (req.body.blocked !== undefined && Boolean(req.body.blocked) !== Boolean(task.blocked)) {
+    logTaskActivity(req.params.id, "blocked_change", String(Boolean(task.blocked)), String(Boolean(req.body.blocked)));
+  }
 
   if (req.body.current_activity !== undefined) {
     updateProjectHeartbeat(task.project_id);
@@ -166,11 +186,23 @@ router.post("/:id/move", (req, res) => {
       `).run(task.project_id, status, position);
     }
 
-    if (status === "in_progress" && starting_commit) {
+    if (status === "in_progress") {
+      if (starting_commit) {
+        db.prepare(`
+          UPDATE tasks SET status = ?, position = ?, starting_commit = ?, started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(status, position, starting_commit, req.params.id);
+      } else {
+        db.prepare(`
+          UPDATE tasks SET status = ?, position = ?, started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(status, position, req.params.id);
+      }
+    } else if (status === "done") {
       db.prepare(`
-        UPDATE tasks SET status = ?, position = ?, starting_commit = ?, updated_at = CURRENT_TIMESTAMP
+        UPDATE tasks SET status = ?, position = ?, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(status, position, starting_commit, req.params.id);
+      `).run(status, position, req.params.id);
     } else {
       db.prepare(`
         UPDATE tasks SET status = ?, position = ?, updated_at = CURRENT_TIMESTAMP
@@ -178,6 +210,10 @@ router.post("/:id/move", (req, res) => {
       `).run(status, position, req.params.id);
     }
   })();
+
+  if (oldStatus !== status) {
+    logTaskActivity(req.params.id, "status_change", oldStatus, status);
+  }
 
   if (status === "in_progress" || status === "done") {
     updateProjectHeartbeat(task.project_id);

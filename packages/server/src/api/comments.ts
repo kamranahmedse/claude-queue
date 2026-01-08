@@ -2,6 +2,7 @@ import { Router, type Router as RouterType } from "express";
 import { nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
 import { updateProjectHeartbeatForTask } from "../utils/heartbeat.js";
+import { logTaskActivity } from "../utils/activity.js";
 import { rowToComment, type CommentRow } from "../utils/mappers.js";
 import type { Comment } from "../types.js";
 
@@ -52,6 +53,8 @@ router.post("/task/:taskId", (req, res) => {
     INSERT INTO comments (id, task_id, author, content)
     VALUES (?, ?, ?, ?)
   `).run(id, taskId, author, content);
+
+  logTaskActivity(taskId, "comment_added", null, author);
 
   if (author === "claude") {
     updateProjectHeartbeatForTask(taskId);

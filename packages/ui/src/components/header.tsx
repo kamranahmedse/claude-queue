@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { HelpCircle, Wrench } from "lucide-react";
+import { HelpCircle, Wrench, Volume2, VolumeX } from "lucide-react";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
+import { useSoundEnabled } from "~/hooks/use-sound";
 import { ClaudeStatus } from "./claude-status";
 import { CopyButton } from "./copy-button";
 import type { Project } from "~/types";
@@ -24,6 +25,8 @@ export function Header(props: HeaderProps) {
     enabled: !!project,
     refetchInterval,
   });
+
+  const [soundEnabled, setSoundEnabled] = useSoundEnabled();
 
   return (
     <header className="sticky top-0 z-20 h-14 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between px-4">
@@ -53,6 +56,13 @@ export function Header(props: HeaderProps) {
             <CopyButton text={`${SKILL_COMMAND} ${project.id}`} />
           </div>
         )}
+        <button
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+          title={soundEnabled ? "Disable sound notifications" : "Enable sound notifications"}
+        >
+          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </button>
         <button
           onClick={onTroubleshootClick}
           className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"

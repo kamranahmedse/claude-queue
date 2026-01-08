@@ -1,4 +1,4 @@
-import type { Task, Comment, TaskStatus } from "../types.js";
+import type { Task, Comment, TaskStatus, TaskActivity, TaskActivityType } from "../types.js";
 
 export interface TaskRow {
   id: string;
@@ -9,6 +9,8 @@ export interface TaskRow {
   blocked: number;
   current_activity: string | null;
   starting_commit: string | null;
+  started_at: string | null;
+  completed_at: string | null;
   position: number;
   created_at: string;
   updated_at: string;
@@ -34,5 +36,20 @@ export function rowToComment(row: CommentRow): Comment {
   return {
     ...row,
     seen: Boolean(row.seen),
+  };
+}
+
+export interface TaskActivityRow {
+  id: string;
+  task_id: string;
+  type: TaskActivityType;
+  old_value: string | null;
+  new_value: string | null;
+  created_at: string;
+}
+
+export function rowToTaskActivity(row: TaskActivityRow): TaskActivity {
+  return {
+    ...row,
   };
 }

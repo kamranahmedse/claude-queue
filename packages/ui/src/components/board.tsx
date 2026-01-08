@@ -15,6 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { listTasksOptions, useCreateTask, useMoveTask, useDeleteAllTasks, useTasksRefetchInterval } from "~/queries/tasks";
 import { listTemplatesOptions, useCreateTemplate, useMoveTemplate, useUpdateTemplate } from "~/queries/templates";
+import { useTaskNotifications } from "~/hooks/use-task-notifications";
 import type { Task, TaskStatus, Template } from "~/types";
 import { COLUMNS } from "~/types";
 import { Column } from "./column";
@@ -139,6 +140,8 @@ export function Board(props: BoardProps) {
 
   const tasks = optimisticTasks ?? serverTasks;
   const templates = optimisticTemplates ?? serverTemplates;
+
+  useTaskNotifications(serverTasks as Task[]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

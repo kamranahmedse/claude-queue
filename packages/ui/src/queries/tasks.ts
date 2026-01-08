@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient, useIsMutating } from "@tanstack/react-query";
 import { httpGet, httpPost, httpPatch, httpDelete } from "~/lib/http";
-import type { Task, TaskWithComments, Comment, TaskStatus } from "~/types";
+import type { Task, TaskWithActivities, Comment, TaskStatus } from "~/types";
 
 export function listTasksOptions(projectId: string) {
   return queryOptions({
@@ -18,7 +18,7 @@ export function useTasksRefetchInterval() {
 export function taskDetailsOptions(taskId: string) {
   return queryOptions({
     queryKey: ["task", taskId],
-    queryFn: () => httpGet<TaskWithComments>(`/tasks/${taskId}`),
+    queryFn: () => httpGet<TaskWithActivities>(`/tasks/${taskId}`),
     enabled: !!taskId,
     refetchInterval: 2000,
   });

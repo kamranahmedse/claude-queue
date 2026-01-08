@@ -69,6 +69,18 @@ export function initSchema(db: Database.Database) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_seeded_templates_project_id ON seeded_templates(project_id);
+
+    CREATE TABLE IF NOT EXISTS task_activity (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      old_value TEXT,
+      new_value TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_task_activity_task_id ON task_activity(task_id);
   `);
 
   const commentColumns = db.prepare("PRAGMA table_info(comments)").all() as { name: string }[];
@@ -86,6 +98,16 @@ export function initSchema(db: Database.Database) {
   const hasClaudeLastSeen = projectColumns.some((col) => col.name === "claude_last_seen");
   if (!hasClaudeLastSeen) {
     db.exec("ALTER TABLE projects ADD COLUMN claude_last_seen DATETIME");
+  }
+
+  const hasStartedAt = taskColumns.some((col) => col.name === "started_at");
+  if (!hasStartedAt) {
+    db.exec("ALTER TABLE tasks ADD COLUMN started_at DATETIME");
+  }
+
+  const hasCompletedAt = taskColumns.some((col) => col.name === "completed_at");
+  if (!hasCompletedAt) {
+    db.exec("ALTER TABLE tasks ADD COLUMN completed_at DATETIME");
   }
 
   // Migration: Mark existing projects as having templates seeded

@@ -1,10 +1,40 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MessageSquare, RotateCcw, XCircle, Lock } from "lucide-react";
+import { MessageSquare, RotateCcw, XCircle, Lock, Clock } from "lucide-react";
 import { useAddComment } from "~/queries/tasks";
 import { ConfirmDialog } from "./confirm-dialog";
+import { Tooltip } from "./tooltip";
 import type { Task } from "~/types";
+
+function formatDuration(startedAt: string | null, completedAt: string | null): string | null {
+  if (!startedAt || !completedAt) {
+    return null;
+  }
+
+  const start = new Date(startedAt).getTime();
+  const end = new Date(completedAt).getTime();
+  const durationMs = end - start;
+
+  if (durationMs < 0) {
+    return null;
+  }
+
+  const seconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+
+  if (hours > 0) {
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m`;
+  }
+
+  return `${seconds}s`;
+}
 
 interface TaskCardProps {
   task: Task;
@@ -18,6 +48,8 @@ export function TaskCard(props: TaskCardProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const isLocked = task.status === "in_progress";
+  const isDone = task.status === "done";
+  const duration = isDone ? formatDuration(task.started_at, task.completed_at) : null;
   const addComment = useAddComment(task.id);
 
   const {
@@ -93,9 +125,25 @@ export function TaskCard(props: TaskCardProps) {
           )}
         </div>
       </div>
-      {task.description && !isLocked && (
-        <div className="mt-2 flex items-center gap-1 text-zinc-600">
-          <MessageSquare className="w-3 h-3" />
+      {task.description && !isLocked && !duration && (
+        <Tooltip
+          content={
+            <div className="whitespace-pre-wrap max-h-48 overflow-y-auto">
+              {task.description}
+            </div>
+          }
+          maxWidth={350}
+        >
+          <div className="mt-2 flex items-center gap-1 text-zinc-600 cursor-help">
+            <MessageSquare className="w-3 h-3" />
+            <span className="text-xs line-clamp-2">{task.description}</span>
+          </div>
+        </Tooltip>
+      )}
+      {duration && (
+        <div className="mt-2 flex items-center gap-1.5 text-zinc-500">
+          <Clock className="w-3 h-3" />
+          <span className="text-xs">{duration}</span>
         </div>
       )}
       {isLocked && (

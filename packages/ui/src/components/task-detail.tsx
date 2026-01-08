@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Trash2, Bot, User, Send, Pencil, Check, Eye } from "lucide-react";
+import { X, Trash2, Bot, User, Send, Pencil, Check, Eye, History, ChevronDown } from "lucide-react";
 import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
 import { formatRelativeTime } from "~/hooks/use-relative-time";
 import { MarkdownRenderer } from "./markdown-renderer";
 import { ConfirmDialog } from "./confirm-dialog";
+import { ActivityTimeline } from "./activity-timeline";
 import type { Task } from "~/types";
 
 interface TaskDetailProps {
@@ -20,6 +21,7 @@ export function TaskDetail(props: TaskDetailProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDescription, setEditDescription] = useState(task.description || "");
+  const [showActivity, setShowActivity] = useState(false);
 
   const { data: taskDetails } = useQuery(taskDetailsOptions(task.id));
   const addComment = useAddComment(task.id);
@@ -69,6 +71,7 @@ export function TaskDetail(props: TaskDetailProps) {
   };
 
   const comments = taskDetails?.comments || [];
+  const activities = taskDetails?.activities || [];
 
   return (
     <>
@@ -205,6 +208,26 @@ export function TaskDetail(props: TaskDetailProps) {
                 <p className="text-sm text-zinc-600">No comments yet</p>
               )}
             </div>
+          </div>
+
+          <div className="pt-4 border-t border-zinc-800">
+            <button
+              onClick={() => setShowActivity(!showActivity)}
+              className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50 rounded-lg px-2 py-2 -mx-2 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <History className="w-3.5 h-3.5" />
+                Activity ({activities.length})
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${showActivity ? "rotate-180" : ""}`}
+              />
+            </button>
+            {showActivity && (
+              <div className="mt-3">
+                <ActivityTimeline activities={activities} />
+              </div>
+            )}
           </div>
         </div>
 
