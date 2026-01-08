@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   DndContext,
@@ -29,6 +29,12 @@ import { EditTemplateModal } from "./edit-template-modal";
 
 interface BoardProps {
   projectId: string;
+}
+
+export interface BoardRef {
+  openAddTask: () => void;
+  openAddTemplate: () => void;
+  closeModals: () => void;
 }
 
 const COLUMN_IDS = new Set(["templates", "backlog", "ready", "in_progress", "done"]);
@@ -106,7 +112,7 @@ function reorderTemplates(templates: Template[], templateId: string, targetPosit
   });
 }
 
-export function Board(props: BoardProps) {
+export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref) {
   const { projectId } = props;
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -121,6 +127,18 @@ export function Board(props: BoardProps) {
   const [overInfo, setOverInfo] = useState<{ status: TaskStatus; position: number } | null>(null);
   const [templateOverInfo, setTemplateOverInfo] = useState<{ position: number } | null>(null);
   const [templateDropTarget, setTemplateDropTarget] = useState<TaskStatus | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    openAddTask: () => setAddTaskStatus("ready"),
+    openAddTemplate: () => setShowAddTemplate(true),
+    closeModals: () => {
+      setSelectedTask(null);
+      setEditingTemplate(null);
+      setAddTaskStatus(null);
+      setAddTaskFromTemplate(null);
+      setShowAddTemplate(false);
+    },
+  }));
 
   const refetchInterval = useTasksRefetchInterval();
   const { data: serverTasks = [], isLoading } = useQuery({
@@ -494,4 +512,4 @@ export function Board(props: BoardProps) {
       )}
     </div>
   );
-}
+});

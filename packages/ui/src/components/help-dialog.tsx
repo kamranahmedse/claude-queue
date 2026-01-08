@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Rocket, GitBranch, MessageCircle, Lightbulb, Inbox, CheckCircle2, Clock, CheckCheck, FileText } from "lucide-react";
+import { X, Rocket, GitBranch, MessageCircle, Lightbulb, Inbox, CheckCircle2, Clock, CheckCheck, FileText, Keyboard } from "lucide-react";
 import { CopyButton } from "./copy-button";
 
 interface HelpDialogProps {
@@ -9,12 +9,13 @@ interface HelpDialogProps {
 
 const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
 
-type TabId = "overview" | "workflow" | "interaction" | "tips";
+type TabId = "overview" | "workflow" | "interaction" | "shortcuts" | "tips";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <Rocket className="w-4 h-4" /> },
   { id: "workflow", label: "Workflow", icon: <GitBranch className="w-4 h-4" /> },
   { id: "interaction", label: "Interaction", icon: <MessageCircle className="w-4 h-4" /> },
+  { id: "shortcuts", label: "Shortcuts", icon: <Keyboard className="w-4 h-4" /> },
   { id: "tips", label: "Tips", icon: <Lightbulb className="w-4 h-4" /> },
 ];
 
@@ -137,6 +138,51 @@ function InteractionTab() {
   );
 }
 
+function ShortcutsTab() {
+  const shortcuts = [
+    { keys: ["?", "H"], description: "Toggle help dialog" },
+    { keys: ["N", "A"], description: "Add new task to Ready" },
+    { keys: ["T"], description: "Add new template" },
+    { keys: ["D"], description: "Open troubleshooting dialog" },
+    { keys: ["S"], description: "Open statistics dialog" },
+    { keys: ["Esc"], description: "Close any open dialog" },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <section>
+        <h3 className="text-sm font-medium text-zinc-200 mb-3">Keyboard Shortcuts</h3>
+        <div className="space-y-2">
+          {shortcuts.map((shortcut, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50"
+            >
+              <span className="text-sm text-zinc-400">{shortcut.description}</span>
+              <div className="flex items-center gap-1.5">
+                {shortcut.keys.map((key, keyIndex) => (
+                  <span key={keyIndex} className="flex items-center gap-1.5">
+                    {keyIndex > 0 && <span className="text-zinc-600 text-xs">or</span>}
+                    <kbd className="px-2 py-1 text-xs font-mono bg-zinc-700 text-zinc-300 rounded border border-zinc-600">
+                      {key}
+                    </kbd>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          Shortcuts are disabled when typing in input fields.
+        </p>
+      </section>
+    </div>
+  );
+}
+
 function TipsTab() {
   return (
     <div className="space-y-5">
@@ -211,6 +257,7 @@ export function HelpDialog(props: HelpDialogProps) {
             {activeTab === "overview" && <OverviewTab projectId={projectId} />}
             {activeTab === "workflow" && <WorkflowTab />}
             {activeTab === "interaction" && <InteractionTab />}
+            {activeTab === "shortcuts" && <ShortcutsTab />}
             {activeTab === "tips" && <TipsTab />}
           </div>
         </div>

@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { listProjectsOptions } from "~/queries/projects";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
+import { useKeyboardShortcuts } from "~/hooks/use-keyboard-shortcuts";
 import { Header } from "~/components/header";
-import { Board } from "~/components/board";
+import { Board, type BoardRef } from "~/components/board";
 import { HelpDialog } from "~/components/help-dialog";
 import { TroubleshootingDialog } from "~/components/troubleshooting-dialog";
 import { StatsDialog } from "~/components/stats-dialog";
@@ -19,6 +20,7 @@ export function App() {
   });
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const boardRef = useRef<BoardRef>(null);
 
   const refetchInterval = useTasksRefetchInterval();
   const { data: projects = [], isLoading } = useQuery({
@@ -55,6 +57,56 @@ export function App() {
     url.searchParams.set("project", projectId);
     window.history.replaceState({}, "", url.toString());
   };
+
+  const hasAnyModalOpen = showHelp || showTroubleshooting || showStats;
+
+  const closeAllModals = () => {
+    if (showHelp) {
+      handleCloseHelp();
+    }
+    if (showTroubleshooting) {
+      setShowTroubleshooting(false);
+    }
+    if (showStats) {
+      setShowStats(false);
+    }
+    boardRef.current?.closeModals();
+  };
+
+  useKeyboardShortcuts({
+    onHelp: () => {
+      if (hasAnyModalOpen) {
+        closeAllModals();
+      } else {
+        setShowHelp(true);
+      }
+    },
+    onAddTask: () => {
+      if (!hasAnyModalOpen) {
+        boardRef.current?.openAddTask();
+      }
+    },
+    onAddTemplate: () => {
+      if (!hasAnyModalOpen) {
+        boardRef.current?.openAddTemplate();
+      }
+    },
+    onCloseModal: closeAllModals,
+    onTroubleshooting: () => {
+      if (hasAnyModalOpen) {
+        closeAllModals();
+      } else {
+        setShowTroubleshooting(true);
+      }
+    },
+    onStats: () => {
+      if (hasAnyModalOpen) {
+        closeAllModals();
+      } else if (selectedProject) {
+        setShowStats(true);
+      }
+    },
+  });
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;
 
@@ -98,7 +150,7 @@ export function App() {
         onTroubleshootClick={() => setShowTroubleshooting(true)}
         onStatsClick={() => setShowStats(true)}
       />
-      {selectedProjectId && <Board projectId={selectedProjectId} />}
+      {selectedProjectId && <Board ref={boardRef} projectId={selectedProjectId} />}
       {!selectedProjectId && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-sm text-zinc-500">Loading...</div>

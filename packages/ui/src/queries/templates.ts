@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { httpGet, httpPost, httpPatch, httpDelete } from "~/lib/http";
-import type { Template, Task, TaskStatus } from "~/types";
+import type { Template } from "~/types";
 
 export function listTemplatesOptions(projectId: string) {
   return queryOptions({
@@ -65,23 +65,6 @@ export function useDeleteTemplate() {
       httpDelete<{ success: boolean }>(`/templates/${templateId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["templates"] });
-    },
-  });
-}
-
-export function useCreateTaskFromTemplate(projectId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      templateId,
-      status,
-    }: {
-      templateId: string;
-      status: TaskStatus;
-    }) => httpPost<Task>(`/templates/${templateId}/create-task`, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
     },
   });
 }

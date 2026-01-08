@@ -1,7 +1,7 @@
 {
   "name": "claude-kanban",
   "version": "1.0.0",
-  "description": "A local kanban board for managing Claude Code projects with MCP integration",
+  "description": "A local kanban board for managing Claude Code projects",
   "type": "module",
   "bin": {
     "claude-kanban": "./dist/cli.js",
@@ -29,11 +29,15 @@
     "task-management",
     "ai-assistant"
   ],
-  "author": "",
+  "author": "Kamran Ahmed <kamranahmed.se@gmail.com>",
   "license": "MIT",
+  "homepage": "https://github.com/kamranahmedse/claude-kanban#readme",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/kamranahmedse/claude-kanban.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kamranahmedse/claude-kanban/issues"
   },
   "engines": {
     "node": ">=18"
