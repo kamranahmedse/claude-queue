@@ -5,6 +5,15 @@ import type { Comment } from "../types.js";
 
 const router = Router();
 
+interface CommentRow {
+  id: string;
+  task_id: string;
+  author: "user" | "claude";
+  content: string;
+  seen: number;
+  created_at: string;
+}
+
 function updateProjectHeartbeatForTask(taskId: string): void {
   const db = getDb();
   const task = db.prepare("SELECT project_id FROM tasks WHERE id = ?").get(taskId) as { project_id: string } | undefined;
@@ -13,7 +22,7 @@ function updateProjectHeartbeatForTask(taskId: string): void {
   }
 }
 
-function rowToComment(row: any): Comment {
+function rowToComment(row: CommentRow): Comment {
   return {
     ...row,
     seen: Boolean(row.seen),
@@ -25,16 +34,16 @@ router.get("/task/:taskId", (req, res) => {
   const { since } = req.query;
 
   let query = "SELECT * FROM comments WHERE task_id = ?";
-  const params: any[] = [req.params.taskId];
+  const params: string[] = [req.params.taskId];
 
   if (since) {
     query += " AND created_at > ?";
-    params.push(since);
+    params.push(since as string);
   }
 
   query += " ORDER BY created_at ASC";
 
-  const comments = db.prepare(query).all(...params) as any[];
+  const comments = db.prepare(query).all(...params) as CommentRow[];
   res.json(comments.map(rowToComment));
 });
 
@@ -70,7 +79,7 @@ router.post("/task/:taskId", (req, res) => {
     updateProjectHeartbeatForTask(taskId);
   }
 
-  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(id) as any;
+  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(id) as CommentRow;
   res.status(201).json(rowToComment(comment));
 });
 
@@ -78,7 +87,7 @@ router.delete("/:commentId", (req, res) => {
   const db = getDb();
   const commentId = req.params.commentId;
 
-  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as any | undefined;
+  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as CommentRow | undefined;
 
   if (!comment) {
     res.status(404).json({ error: "Comment not found" });
@@ -98,7 +107,7 @@ router.patch("/:commentId/seen", (req, res) => {
   const db = getDb();
   const commentId = req.params.commentId;
 
-  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as any | undefined;
+  const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as CommentRow | undefined;
 
   if (!comment) {
     res.status(404).json({ error: "Comment not found" });
@@ -107,7 +116,7 @@ router.patch("/:commentId/seen", (req, res) => {
 
   db.prepare("UPDATE comments SET seen = 1 WHERE id = ?").run(commentId);
 
-  const updated = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as any;
+  const updated = db.prepare("SELECT * FROM comments WHERE id = ?").get(commentId) as CommentRow;
   res.json(rowToComment(updated));
 });
 
@@ -118,7 +127,7 @@ router.patch("/task/:taskId/mark-seen", (req, res) => {
   db.prepare("UPDATE comments SET seen = 1 WHERE task_id = ? AND author = 'user' AND seen = 0").run(taskId);
   updateProjectHeartbeatForTask(taskId);
 
-  const comments = db.prepare("SELECT * FROM comments WHERE task_id = ? ORDER BY created_at ASC").all(taskId) as any[];
+  const comments = db.prepare("SELECT * FROM comments WHERE task_id = ? ORDER BY created_at ASC").all(taskId) as CommentRow[];
   res.json(comments.map(rowToComment));
 });
 
@@ -144,7 +153,7 @@ router.get("/task/:taskId/wait-for-reply", async (req, res) => {
     }
 
     let query = "SELECT * FROM comments WHERE task_id = ? AND author = 'user'";
-    const params: any[] = [taskId];
+    const params: string[] = [taskId];
 
     if (since) {
       query += " AND created_at > ?";
@@ -153,7 +162,7 @@ router.get("/task/:taskId/wait-for-reply", async (req, res) => {
 
     query += " ORDER BY created_at DESC LIMIT 1";
 
-    const row = db.prepare(query).get(...params) as any | undefined;
+    const row = db.prepare(query).get(...params) as CommentRow | undefined;
     return row ? rowToComment(row) : null;
   };
 

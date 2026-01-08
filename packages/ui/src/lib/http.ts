@@ -77,5 +77,9 @@ export async function httpDelete<T>(url: string): Promise<T> {
     throw new FetchError(response.status, text);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json();
 }

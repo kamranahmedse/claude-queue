@@ -17,13 +17,34 @@ importers:
 
   packages/cli:
     dependencies:
-      '@claude-kanban/server':
-        specifier: workspace:*
-        version: link:../server
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.0.0
+        version: 1.25.2(hono@4.11.3)(zod@4.3.5)
+      better-sqlite3:
+        specifier: ^11.0.0
+        version: 11.10.0
       commander:
         specifier: ^12.0.0
         version: 12.1.0
+      cors:
+        specifier: ^2.8.5
+        version: 2.8.5
+      express:
+        specifier: ^4.18.2
+        version: 4.22.1
+      nanoid:
+        specifier: ^5.0.4
+        version: 5.1.6
     devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.8
+        version: 7.6.13
+      '@types/cors':
+        specifier: ^2.8.17
+        version: 2.8.19
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.27

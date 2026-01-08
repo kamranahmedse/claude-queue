@@ -1,5 +1,6 @@
 .PHONY: help install build dev dev-server dev-ui start clean typecheck \
-        install-skills watch-skills setup setup-dev test-api
+        install-skills watch-skills setup setup-dev test-api \
+        build-package publish publish-dry-run
 
 # Ports
 DEV_PORT := 3334
@@ -126,3 +127,19 @@ test-api: ## Test API endpoints (requires running server)
 
 logs: ## View server logs
 	@tail -f $(HOME)/.claude-kanban/server.log 2>/dev/null || echo "No logs found. Start server with --detach first."
+
+# ============ Publishing ============
+
+build-package: ## Build the npm package for publishing
+	@echo "Building npm package..."
+	cd packages/cli && node scripts/build.js
+
+publish-dry-run: build-package ## Test publishing without actually publishing
+	@echo "\nDry run publishing..."
+	cd packages/cli && npm publish --dry-run
+	@echo "\n✓ Dry run complete. Run 'make publish' to actually publish."
+
+publish: build-package ## Publish to npm (requires npm login)
+	@echo "\nPublishing to npm..."
+	cd packages/cli && npm publish
+	@echo "\n✓ Published claude-kanban to npm!"

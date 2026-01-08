@@ -1,23 +1,45 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
-import type { Task, Comment, TaskWithComments } from "../types.js";
+import type { Task, Comment, TaskWithComments, TaskStatus } from "../types.js";
 
 const router = Router();
+
+interface TaskRow {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  blocked: number;
+  current_activity: string | null;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CommentRow {
+  id: string;
+  task_id: string;
+  author: "user" | "claude";
+  content: string;
+  seen: number;
+  created_at: string;
+}
 
 function updateProjectHeartbeat(projectId: string): void {
   const db = getDb();
   db.prepare("UPDATE projects SET claude_last_seen = CURRENT_TIMESTAMP WHERE id = ?").run(projectId);
 }
 
-function rowToTask(row: any): Task {
+function rowToTask(row: TaskRow): Task {
   return {
     ...row,
     blocked: Boolean(row.blocked),
   };
 }
 
-function rowToComment(row: any): Comment {
+function rowToComment(row: CommentRow): Comment {
   return {
     ...row,
     seen: Boolean(row.seen),
@@ -29,22 +51,22 @@ router.get("/project/:projectId", (req, res) => {
   const { status } = req.query;
 
   let query = "SELECT * FROM tasks WHERE project_id = ?";
-  const params: any[] = [req.params.projectId];
+  const params: (string | TaskStatus)[] = [req.params.projectId];
 
   if (status) {
     query += " AND status = ?";
-    params.push(status);
+    params.push(status as TaskStatus);
   }
 
   query += " ORDER BY position ASC";
 
-  const tasks = db.prepare(query).all(...params) as any[];
+  const tasks = db.prepare(query).all(...params) as TaskRow[];
   res.json(tasks.map(rowToTask));
 });
 
 router.get("/:id", (req, res) => {
   const db = getDb();
-  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any | undefined;
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow | undefined;
 
   if (!task) {
     res.status(404).json({ error: "Task not found" });
@@ -53,7 +75,7 @@ router.get("/:id", (req, res) => {
 
   const commentsRaw = db
     .prepare("SELECT * FROM comments WHERE task_id = ? ORDER BY created_at ASC")
-    .all(req.params.id) as any[];
+    .all(req.params.id) as CommentRow[];
 
   const result: TaskWithComments = {
     ...rowToTask(task),
@@ -92,13 +114,13 @@ router.post("/project/:projectId", (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(id, projectId, title, description || null, status, position);
 
-  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as any;
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as TaskRow;
   res.status(201).json(rowToTask(task));
 });
 
 router.patch("/:id", (req, res) => {
   const db = getDb();
-  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any | undefined;
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow | undefined;
 
   if (!task) {
     res.status(404).json({ error: "Task not found" });
@@ -107,7 +129,7 @@ router.patch("/:id", (req, res) => {
 
   const allowedFields = ["title", "description", "blocked", "current_activity"];
   const updates: string[] = [];
-  const values: any[] = [];
+  const values: (string | number | null)[] = [];
 
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) {
@@ -130,7 +152,7 @@ router.patch("/:id", (req, res) => {
     updateProjectHeartbeat(task.project_id);
   }
 
-  const updated = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any;
+  const updated = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow;
   res.json(rowToTask(updated));
 });
 
@@ -143,7 +165,7 @@ router.post("/:id/move", (req, res) => {
   }
 
   const db = getDb();
-  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any | undefined;
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow | undefined;
 
   if (!task) {
     res.status(404).json({ error: "Task not found" });
@@ -188,13 +210,13 @@ router.post("/:id/move", (req, res) => {
     updateProjectHeartbeat(task.project_id);
   }
 
-  const updated = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any;
+  const updated = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow;
   res.json(rowToTask(updated));
 });
 
 router.delete("/:id", (req, res) => {
   const db = getDb();
-  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any | undefined;
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow | undefined;
 
   if (!task) {
     res.status(404).json({ error: "Task not found" });

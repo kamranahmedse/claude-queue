@@ -39,8 +39,14 @@ export function createServer(port = 3333) {
   app.use("/api/templates", templatesRouter);
   app.use("/health", healthRouter);
 
-  const uiPath = join(__dirname, "../../ui/dist");
-  if (existsSync(uiPath)) {
+  // Find UI path - works for both npm package and development
+  const uiPaths = [
+    join(__dirname, "../ui"),        // npm package: dist/server/../ui = dist/ui
+    join(__dirname, "../../ui/dist") // development: dist/../../ui/dist
+  ];
+
+  const uiPath = uiPaths.find((p) => existsSync(join(p, "index.html")));
+  if (uiPath) {
     app.use(express.static(uiPath));
     app.get("*", (_req, res) => {
       res.sendFile(join(uiPath, "index.html"));

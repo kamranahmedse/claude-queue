@@ -7,32 +7,44 @@ const router = Router();
 const generateId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 4);
 
 const DEFAULT_TEMPLATES = [
-  { title: "Bug fix", description: "Investigate and fix a reported bug. Include root cause analysis." },
-  { title: "Add tests", description: "Write unit/integration tests for existing functionality." },
-  { title: "Refactor", description: "Improve code structure without changing behavior. Focus on readability and maintainability." },
-  { title: "Code review", description: "Review recent changes for bugs, performance issues, and best practices." },
-  { title: "Documentation", description: "Add or update documentation, comments, or README files." },
+  { key: "bug-fix", title: "Bug fix", description: "Investigate and fix a reported bug. Include root cause analysis." },
+  { key: "add-tests", title: "Add tests", description: "Write unit/integration tests for existing functionality." },
+  { key: "refactor", title: "Refactor", description: "Improve code structure without changing behavior. Focus on readability and maintainability." },
+  { key: "code-review", title: "Code review", description: "Review recent changes for bugs, performance issues, and best practices." },
+  { key: "documentation", title: "Documentation", description: "Add or update documentation, comments, or README files." },
 ];
 
 function seedDefaultTemplates(projectId: string): void {
   const db = getDb();
 
-  const existingCount = db
-    .prepare("SELECT COUNT(*) as count FROM templates WHERE project_id = ?")
-    .get(projectId) as { count: number };
+  const seededKeys = db
+    .prepare("SELECT template_key FROM seeded_templates WHERE project_id = ?")
+    .all(projectId) as { template_key: string }[];
+  const seededKeySet = new Set(seededKeys.map((row) => row.template_key));
 
-  if (existingCount.count > 0) {
+  const templatesToSeed = DEFAULT_TEMPLATES.filter((t) => !seededKeySet.has(t.key));
+
+  if (templatesToSeed.length === 0) {
     return;
   }
 
-  const insertStmt = db.prepare(`
+  const maxPosition = db
+    .prepare("SELECT COALESCE(MAX(position), -1) as max FROM templates WHERE project_id = ?")
+    .get(projectId) as { max: number };
+
+  const insertTemplateStmt = db.prepare(`
     INSERT INTO templates (id, project_id, title, description, position)
     VALUES (?, ?, ?, ?, ?)
   `);
+  const markSeededStmt = db.prepare(`
+    INSERT INTO seeded_templates (project_id, template_key)
+    VALUES (?, ?)
+  `);
 
   db.transaction(() => {
-    DEFAULT_TEMPLATES.forEach((template, index) => {
-      insertStmt.run(nanoid(), projectId, template.title, template.description, index);
+    templatesToSeed.forEach((template, index) => {
+      insertTemplateStmt.run(nanoid(), projectId, template.title, template.description, maxPosition.max + 1 + index);
+      markSeededStmt.run(projectId, template.key);
     });
   })();
 }

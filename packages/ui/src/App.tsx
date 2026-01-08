@@ -44,15 +44,7 @@ export function App() {
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-sm text-zinc-500">Loading...</div>
-      </div>
-    );
-  }
-
-  if (projects.length === 0) {
+  if (!isLoading && projects.length === 0) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="text-center">
@@ -91,6 +83,11 @@ export function App() {
         onHelpClick={() => setShowHelp(true)}
       />
       {selectedProjectId && <Board projectId={selectedProjectId} />}
+      {!selectedProjectId && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-sm text-zinc-500">Loading...</div>
+        </div>
+      )}
       {showHelp && <HelpDialog projectId={selectedProjectId} onClose={handleCloseHelp} />}
     </div>
   );

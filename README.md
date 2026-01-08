@@ -100,6 +100,11 @@ make uninstall-mcp   # Remove MCP configs
 make typecheck       # Run TypeScript checks
 make test-api        # Test API endpoints
 make logs            # View server logs
+
+# Publishing (maintainers only)
+make build-package   # Build npm package
+make publish-dry-run # Test publish without actually publishing
+make publish         # Publish to npm
 ```
 
 ### Ports
@@ -249,7 +254,7 @@ The MCP server is automatically configured when you run `npx claude-kanban` for 
   "mcpServers": {
     "claude-kanban": {
       "command": "npx",
-      "args": ["-y", "@claude-kanban/mcp"],
+      "args": ["-y", "-p", "claude-kanban", "claude-kanban-mcp"],
       "env": {
         "KANBAN_SERVER_URL": "http://localhost:3333"
       }
@@ -331,6 +336,41 @@ make uninstall-mcp    # Remove MCP configs
 ### Health
 
 - `GET /api/health` - Server status and stats
+
+## Publishing to npm
+
+The project is published as a single npm package called `claude-kanban`. To publish a new version:
+
+### Prerequisites
+
+1. Login to npm: `npm login`
+2. Ensure you have publish rights to the `claude-kanban` package
+
+### Publishing Steps
+
+```bash
+# 1. Update version in packages/cli/package.json
+# 2. Build and test
+make build-package
+make publish-dry-run
+
+# 3. Publish
+make publish
+
+# 4. Commit and tag the release
+git add -A
+git commit -m "chore: release v1.x.x"
+git tag v1.x.x
+git push && git push --tags
+```
+
+### Package Contents
+
+The npm package bundles:
+- CLI (`claude-kanban` command)
+- MCP server (`claude-kanban-mcp` command)
+- Express API server
+- React UI (pre-built static files)
 
 ## License
 

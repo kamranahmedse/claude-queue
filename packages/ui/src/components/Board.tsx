@@ -393,16 +393,15 @@ export function Board(props: BoardProps) {
     );
   };
 
-  if (isLoading || isLoadingTemplates) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-zinc-500">Loading tasks...</div>
-      </div>
-    );
-  }
+  const showLoading = isLoading || isLoadingTemplates;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 relative">
+      {showLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-10">
+          <div className="text-sm text-zinc-500">Loading...</div>
+        </div>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={collisionDetection}

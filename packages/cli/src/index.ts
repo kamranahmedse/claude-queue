@@ -86,7 +86,7 @@ async function configureMcp(): Promise<void> {
   if (!mcpServers["claude-kanban"]) {
     mcpServers["claude-kanban"] = {
       command: "npx",
-      args: ["-y", "@claude-kanban/mcp"],
+      args: ["-y", "-p", "claude-kanban", "claude-kanban-mcp"],
       env: {
         KANBAN_SERVER_URL: `http://localhost:${DEFAULT_PORT}`,
       },
@@ -220,24 +220,28 @@ async function registerProject(
   return project.id;
 }
 
+function getServerPath(): string {
+  // When running from npm package: dist/server/index.js relative to dist/cli.js
+  const npmServerPath = join(import.meta.dirname, "server", "index.js");
+  if (existsSync(npmServerPath)) {
+    return npmServerPath;
+  }
+
+  // When running from monorepo development: ../../server/dist/index.js
+  const devServerPath = join(import.meta.dirname, "..", "..", "server", "dist", "index.js");
+  if (existsSync(devServerPath)) {
+    return devServerPath;
+  }
+
+  throw new Error("Server not found. Run 'pnpm build' first.");
+}
+
 async function startServer(
   port: number,
   detach: boolean,
   verbose: boolean
 ): Promise<ChildProcess | null> {
-  const serverPath = join(
-    import.meta.dirname,
-    "..",
-    "..",
-    "server",
-    "dist",
-    "index.js"
-  );
-
-  if (!existsSync(serverPath)) {
-    console.error("Server not found. Run pnpm build first.");
-    process.exit(1);
-  }
+  const serverPath = getServerPath();
 
   const env = {
     ...process.env,
