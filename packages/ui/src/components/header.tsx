@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { HelpCircle } from "lucide-react";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
-import { ClaudeStatus } from "./ClaudeStatus";
-import { CopyButton } from "./CopyButton";
+import { ClaudeStatus } from "./claude-status";
+import { CopyButton } from "./copy-button";
 import type { Project } from "~/types";
 
 const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";

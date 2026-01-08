@@ -1,5 +1,5 @@
 .PHONY: help install build dev dev-server dev-ui start clean typecheck \
-        install-skills watch-skills setup setup-dev test-api \
+        generate-skills install-skills watch-skills setup setup-dev test-api \
         build-package publish publish-dry-run
 
 # Ports
@@ -50,7 +50,10 @@ start: ## Start production server (port 3333)
 
 # ============ Skills ============
 
-install-skills: ## Copy skills to ~/.claude/skills/
+generate-skills: ## Generate SKILL.md files from template
+	@cd packages/cli && pnpm exec tsx ../../skills/generate-skills.ts
+
+install-skills: generate-skills ## Generate and copy skills to ~/.claude/skills/
 	@mkdir -p $(SKILLS_DEST)/kanban $(SKILLS_DEST)/kanban-dev
 	@cp -r $(SKILLS_SRC)/kanban/* $(SKILLS_DEST)/kanban/
 	@cp -r $(SKILLS_SRC)/kanban-dev/* $(SKILLS_DEST)/kanban-dev/
@@ -62,6 +65,7 @@ watch-skills: ## Watch and auto-copy skills on change
 	@echo "Press Ctrl+C to stop"
 	@while true; do \
 		fswatch -1 $(SKILLS_SRC) && \
+		cd packages/cli && pnpm exec tsx ../../skills/generate-skills.ts && cd ../.. && \
 		cp -r $(SKILLS_SRC)/kanban/* $(SKILLS_DEST)/kanban/ && \
 		cp -r $(SKILLS_SRC)/kanban-dev/* $(SKILLS_DEST)/kanban-dev/ && \
 		echo "✓ Skills updated at $$(date +%H:%M:%S)"; \

@@ -16,7 +16,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "node scripts/build.js",
+    "build": "tsx scripts/build.ts",
     "build:cli": "tsup src/index.ts --format esm --out-dir dist --clean --entry.cli=src/index.ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
@@ -52,6 +52,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.10.0",
     "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
 }

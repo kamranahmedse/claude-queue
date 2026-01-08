@@ -1,33 +1,11 @@
 import { Router, type Router as RouterType } from "express";
 import { nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
+import { updateProjectHeartbeatForTask } from "../utils/heartbeat.js";
+import { rowToComment, type CommentRow } from "../utils/mappers.js";
 import type { Comment } from "../types.js";
 
 const router: RouterType = Router();
-
-interface CommentRow {
-  id: string;
-  task_id: string;
-  author: "user" | "claude";
-  content: string;
-  seen: number;
-  created_at: string;
-}
-
-function updateProjectHeartbeatForTask(taskId: string): void {
-  const db = getDb();
-  const task = db.prepare("SELECT project_id FROM tasks WHERE id = ?").get(taskId) as { project_id: string } | undefined;
-  if (task) {
-    db.prepare("UPDATE projects SET claude_last_seen = CURRENT_TIMESTAMP WHERE id = ?").run(task.project_id);
-  }
-}
-
-function rowToComment(row: CommentRow): Comment {
-  return {
-    ...row,
-    seen: Boolean(row.seen),
-  };
-}
 
 router.get("/task/:taskId", (req, res) => {
   const db = getDb();

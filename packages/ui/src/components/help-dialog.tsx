@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Rocket, GitBranch, MessageCircle, Lightbulb, Inbox, CheckCircle2, Clock, CheckCheck, FileText } from "lucide-react";
-import { CopyButton } from "./CopyButton";
+import { CopyButton } from "./copy-button";
 
 interface HelpDialogProps {
   projectId: string | null;

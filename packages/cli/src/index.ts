@@ -4,6 +4,7 @@ import { spawn, ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, basename, resolve } from "node:path";
 import { homedir } from "node:os";
+import { customAlphabet } from "nanoid";
 
 const DEFAULT_PORT = 3333;
 const KANBAN_DIR = join(homedir(), ".claude-kanban");
@@ -12,6 +13,8 @@ const LOG_FILE = join(KANBAN_DIR, "server.log");
 const CLAUDE_DIR = join(homedir(), ".claude");
 const SKILLS_DIR = join(CLAUDE_DIR, "skills");
 
+const generateId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 4);
+
 function ensureKanbanDir(): void {
   if (!existsSync(KANBAN_DIR)) {
     mkdirSync(KANBAN_DIR, { recursive: true });
@@ -19,12 +22,7 @@ function ensureKanbanDir(): void {
 }
 
 function generateProjectId(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let id = "kbn-";
-  for (let i = 0; i < 4; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return id;
+  return `kbn-${generateId()}`;
 }
 
 async function isServerRunning(port: number): Promise<boolean> {

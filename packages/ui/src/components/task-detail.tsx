@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Trash2, Bot, User, Send, Pencil, Check, Eye } from "lucide-react";
 import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
-import { formatRelativeTime } from "~/hooks/useRelativeTime";
-import { MarkdownRenderer } from "./MarkdownRenderer";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { formatRelativeTime } from "~/hooks/use-relative-time";
+import { MarkdownRenderer } from "./markdown-renderer";
+import { ConfirmDialog } from "./confirm-dialog";
 import type { Task } from "~/types";
 
 interface TaskDetailProps {

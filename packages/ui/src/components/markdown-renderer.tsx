@@ -1,7 +1,7 @@
 import { memo } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CopyButton } from "./CopyButton";
+import { CopyButton } from "./copy-button";
 
 interface MarkdownRendererProps {
   content: string;

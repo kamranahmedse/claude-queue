@@ -6,8 +6,8 @@ import {
 } from "@dnd-kit/sortable";
 import { Plus, Trash2 } from "lucide-react";
 import type { Task, TaskStatus } from "~/types";
-import { TaskCard } from "./TaskCard";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { TaskCard } from "./task-card";
+import { ConfirmDialog } from "./confirm-dialog";
 
 interface ColumnProps {
   id: TaskStatus;

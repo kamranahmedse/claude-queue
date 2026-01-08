@@ -1,51 +1,16 @@
 import { Router, type Router as RouterType } from "express";
 import { nanoid } from "nanoid";
 import { getDb } from "../db/index.js";
-import type { Task, Comment, TaskWithComments, TaskStatus } from "../types.js";
+import { updateProjectHeartbeat } from "../utils/heartbeat.js";
+import {
+  rowToTask,
+  rowToComment,
+  type TaskRow,
+  type CommentRow,
+} from "../utils/mappers.js";
+import type { TaskWithComments, TaskStatus } from "../types.js";
 
 const router: RouterType = Router();
-
-interface TaskRow {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string | null;
-  status: TaskStatus;
-  blocked: number;
-  current_activity: string | null;
-  starting_commit: string | null;
-  position: number;
-  created_at: string;
-  updated_at: string;
-}
-
-interface CommentRow {
-  id: string;
-  task_id: string;
-  author: "user" | "claude";
-  content: string;
-  seen: number;
-  created_at: string;
-}
-
-function updateProjectHeartbeat(projectId: string): void {
-  const db = getDb();
-  db.prepare("UPDATE projects SET claude_last_seen = CURRENT_TIMESTAMP WHERE id = ?").run(projectId);
-}
-
-function rowToTask(row: TaskRow): Task {
-  return {
-    ...row,
-    blocked: Boolean(row.blocked),
-  };
-}
-
-function rowToComment(row: CommentRow): Comment {
-  return {
-    ...row,
-    seen: Boolean(row.seen),
-  };
-}
 
 router.get("/project/:projectId", (req, res) => {
   const db = getDb();

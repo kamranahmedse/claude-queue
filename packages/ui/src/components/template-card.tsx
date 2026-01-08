@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FileText, Trash2 } from "lucide-react";
 import { useDeleteTemplate } from "~/queries/templates";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { ConfirmDialog } from "./confirm-dialog";
 import type { Template } from "~/types";
 
 interface TemplateCardProps {

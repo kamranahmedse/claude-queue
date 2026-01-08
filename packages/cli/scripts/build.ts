@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 /**
  * Build script for claude-kanban npm package
  *
@@ -15,12 +15,12 @@ const cliRoot = join(__dirname, "..");
 const packagesRoot = join(cliRoot, "..");
 const distDir = join(cliRoot, "dist");
 
-function run(cmd, cwd = cliRoot) {
+function run(cmd: string, cwd: string = cliRoot): void {
   console.log(`> ${cmd}`);
   execSync(cmd, { cwd, stdio: "inherit" });
 }
 
-function clean() {
+function clean(): void {
   console.log("\n📦 Cleaning dist...");
   if (existsSync(distDir)) {
     rmSync(distDir, { recursive: true });
@@ -28,30 +28,30 @@ function clean() {
   mkdirSync(distDir, { recursive: true });
 }
 
-function buildUI() {
+function buildUI(): void {
   console.log("\n🎨 Building UI...");
   const uiDir = join(packagesRoot, "ui");
   run("pnpm build", uiDir);
 }
 
-function buildServer() {
+function buildServer(): void {
   console.log("\n🖥️  Building Server...");
   const serverDir = join(packagesRoot, "server");
   run("pnpm build", serverDir);
 }
 
-function buildMCP() {
+function buildMCP(): void {
   console.log("\n🔌 Building MCP...");
   const mcpDir = join(packagesRoot, "mcp");
   run("pnpm build", mcpDir);
 }
 
-function bundleCLI() {
+function bundleCLI(): void {
   console.log("\n⚡ Bundling CLI...");
   run("npx tsup src/index.ts --format esm --out-dir dist --entry.cli=src/index.ts --no-splitting", cliRoot);
 }
 
-function copyAssets() {
+function copyAssets(): void {
   console.log("\n📋 Copying assets...");
 
   // Copy UI dist
@@ -101,7 +101,7 @@ function copyAssets() {
   }
 }
 
-function createEntryPoints() {
+function createEntryPoints(): void {
   console.log("\n🔧 Creating entry points...");
 
   // Create MCP entry point wrapper
@@ -120,7 +120,7 @@ import(mcpPath);
   console.log("  ✓ Created dist/mcp.js wrapper");
 }
 
-function main() {
+function main(): void {
   console.log("🚀 Building claude-kanban package...\n");
 
   clean();

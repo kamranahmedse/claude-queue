@@ -17,14 +17,14 @@ import { listTasksOptions, useCreateTask, useMoveTask, useDeleteAllTasks, useTas
 import { listTemplatesOptions, useCreateTemplate, useMoveTemplate, useUpdateTemplate } from "~/queries/templates";
 import type { Task, TaskStatus, Template } from "~/types";
 import { COLUMNS } from "~/types";
-import { Column } from "./Column";
-import { TemplateColumn } from "./TemplateColumn";
-import { TaskCard } from "./TaskCard";
-import { TemplateCard } from "./TemplateCard";
-import { TaskDetail } from "./TaskDetail";
-import { AddTaskModal } from "./AddTaskModal";
-import { AddTemplateModal } from "./AddTemplateModal";
-import { EditTemplateModal } from "./EditTemplateModal";
+import { Column } from "./column";
+import { TemplateColumn } from "./template-column";
+import { TaskCard } from "./task-card";
+import { TemplateCard } from "./template-card";
+import { TaskDetail } from "./task-detail";
+import { AddTaskModal } from "./add-task-modal";
+import { AddTemplateModal } from "./add-template-modal";
+import { EditTemplateModal } from "./edit-template-modal";
 
 interface BoardProps {
   projectId: string;

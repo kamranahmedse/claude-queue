@@ -5,7 +5,7 @@ import {
 } from "@dnd-kit/sortable";
 import { Plus, HelpCircle } from "lucide-react";
 import type { Template } from "~/types";
-import { TemplateCard } from "./TemplateCard";
+import { TemplateCard } from "./template-card";
 
 interface TemplateColumnProps {
   templates: Template[];

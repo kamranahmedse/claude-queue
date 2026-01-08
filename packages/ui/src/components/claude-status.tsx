@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Loader2, AlertCircle, ChevronDown, Terminal } from "lucide-react";
-import { CopyButton } from "./CopyButton";
+import { CopyButton } from "./copy-button";
 import type { Task, Project } from "~/types";
 
 interface ClaudeStatusProps {

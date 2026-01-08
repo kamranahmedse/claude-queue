@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { MessageSquare, RotateCcw, XCircle, Lock } from "lucide-react";
 import { useAddComment } from "~/queries/tasks";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { ConfirmDialog } from "./confirm-dialog";
 import type { Task } from "~/types";
 
 interface TaskCardProps {
@@ -65,7 +65,7 @@ export function TaskCard(props: TaskCardProps) {
         p-3 rounded-lg border transition-colors select-none
         ${isLocked ? "cursor-default" : "cursor-pointer"}
         ${isDragging ? "opacity-50" : ""}
-        ${isLocked && !task.blocked ? "in-progress-stripes" : ""}
+        ${isLocked && !task.blocked ? "in-progress-glow" : ""}
         ${
           task.blocked
             ? "bg-red-900/20 border-red-500/50 hover:border-red-500"

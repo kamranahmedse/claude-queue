@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { listProjectsOptions } from "~/queries/projects";
-import { Header } from "~/components/Header";
-import { Board } from "~/components/Board";
-import { HelpDialog } from "~/components/HelpDialog";
-import { CopyButton } from "~/components/CopyButton";
+import { Header } from "~/components/header";
+import { Board } from "~/components/board";
+import { HelpDialog } from "~/components/help-dialog";
+import { CopyButton } from "~/components/copy-button";
 
 const HELP_SEEN_KEY = "claude-kanban-help-seen";
 
