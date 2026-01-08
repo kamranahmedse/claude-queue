@@ -18,7 +18,7 @@ interface StatusInfo {
   details?: string;
 }
 
-const HEARTBEAT_TIMEOUT_MS = 30000;
+const HEARTBEAT_TIMEOUT_MS = 120000;
 const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
 
 function isClaudeConnected(project: Project): boolean {

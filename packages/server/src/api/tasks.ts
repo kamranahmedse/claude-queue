@@ -5,6 +5,11 @@ import type { Task, Comment, TaskWithComments } from "../types.js";
 
 const router = Router();
 
+function updateProjectHeartbeat(projectId: string): void {
+  const db = getDb();
+  db.prepare("UPDATE projects SET claude_last_seen = CURRENT_TIMESTAMP WHERE id = ?").run(projectId);
+}
+
 function rowToTask(row: any): Task {
   return {
     ...row,
@@ -121,6 +126,10 @@ router.patch("/:id", (req, res) => {
 
   db.prepare(`UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`).run(...values);
 
+  if (req.body.current_activity !== undefined) {
+    updateProjectHeartbeat(task.project_id);
+  }
+
   const updated = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any;
   res.json(rowToTask(updated));
 });
@@ -174,6 +183,10 @@ router.post("/:id/move", (req, res) => {
       WHERE id = ?
     `).run(status, position, req.params.id);
   })();
+
+  if (status === "in_progress" || status === "done") {
+    updateProjectHeartbeat(task.project_id);
+  }
 
   const updated = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as any;
   res.json(rowToTask(updated));

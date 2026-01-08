@@ -1,4 +1,4 @@
-import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient, useIsMutating } from "@tanstack/react-query";
 import { httpGet, httpPost, httpPatch, httpDelete } from "~/lib/http";
 import type { Task, TaskWithComments, Comment, TaskStatus } from "~/types";
 
@@ -7,8 +7,12 @@ export function listTasksOptions(projectId: string) {
     queryKey: ["tasks", projectId],
     queryFn: () => httpGet<Task[]>(`/tasks/project/${projectId}`),
     enabled: !!projectId,
-    refetchInterval: 2000,
   });
+}
+
+export function useTasksRefetchInterval() {
+  const isMutating = useIsMutating({ mutationKey: ["moveTask"] });
+  return isMutating > 0 ? false : 2000;
 }
 
 export function taskDetailsOptions(taskId: string) {
@@ -57,6 +61,7 @@ export function useMoveTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ["moveTask"],
     mutationFn: ({
       taskId,
       status,
@@ -115,6 +120,11 @@ export function useMoveTask() {
         for (const [queryKey, data] of context.queriesData) {
           queryClient.setQueryData(queryKey, data);
         }
+      }
+    },
+    onSettled: (task) => {
+      if (task) {
+        queryClient.invalidateQueries({ queryKey: ["tasks", task.project_id] });
       }
     },
   });

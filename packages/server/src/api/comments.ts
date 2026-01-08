@@ -5,6 +5,14 @@ import type { Comment } from "../types.js";
 
 const router = Router();
 
+function updateProjectHeartbeatForTask(taskId: string): void {
+  const db = getDb();
+  const task = db.prepare("SELECT project_id FROM tasks WHERE id = ?").get(taskId) as { project_id: string } | undefined;
+  if (task) {
+    db.prepare("UPDATE projects SET claude_last_seen = CURRENT_TIMESTAMP WHERE id = ?").run(task.project_id);
+  }
+}
+
 function rowToComment(row: any): Comment {
   return {
     ...row,
@@ -58,6 +66,10 @@ router.post("/task/:taskId", (req, res) => {
     VALUES (?, ?, ?, ?)
   `).run(id, taskId, author, content);
 
+  if (author === "claude") {
+    updateProjectHeartbeatForTask(taskId);
+  }
+
   const comment = db.prepare("SELECT * FROM comments WHERE id = ?").get(id) as any;
   res.status(201).json(rowToComment(comment));
 });
@@ -84,6 +96,7 @@ router.patch("/task/:taskId/mark-seen", (req, res) => {
   const taskId = req.params.taskId;
 
   db.prepare("UPDATE comments SET seen = 1 WHERE task_id = ? AND author = 'user' AND seen = 0").run(taskId);
+  updateProjectHeartbeatForTask(taskId);
 
   const comments = db.prepare("SELECT * FROM comments WHERE task_id = ? ORDER BY created_at ASC").all(taskId) as any[];
   res.json(comments.map(rowToComment));
