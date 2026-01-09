@@ -1,5 +1,5 @@
 {
-  "name": "@claude-board/server",
+  "name": "@claude-queue/server",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

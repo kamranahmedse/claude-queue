@@ -30,7 +30,7 @@ function OverviewTab(props: OverviewTabProps) {
   return (
     <div className="space-y-5">
       <section>
-        <h3 className="text-sm font-medium text-zinc-200 mb-2">What is claude-board?</h3>
+        <h3 className="text-sm font-medium text-zinc-200 mb-2">What is claude-queue?</h3>
         <p className="text-sm text-zinc-400 leading-relaxed">
           A visual task board that lets you assign tasks to Claude Code.
           Add tasks to the board, and Claude will work through them autonomously.
@@ -189,7 +189,7 @@ function TipsTab() {
       <section>
         <h3 className="text-sm font-medium text-zinc-200 mb-2">Multiple Projects</h3>
         <p className="text-sm text-zinc-400 leading-relaxed">
-          Run <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-orange-400 text-xs">npx claude-board</code> in
+          Run <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-orange-400 text-xs">npx claude-queue</code> in
           different directories to create separate boards. Switch projects using the header dropdown.
         </p>
       </section>
@@ -198,7 +198,7 @@ function TipsTab() {
         <h3 className="text-sm font-medium text-zinc-200 mb-2">Status Indicator</h3>
         <p className="text-sm text-zinc-400 leading-relaxed">
           The header shows Claude's status — working, idle, or waiting for a reply.
-          If tasks aren't being picked up, ensure the kanban skill is running.
+          If tasks aren't being picked up, ensure the queue skill is running.
         </p>
       </section>
 

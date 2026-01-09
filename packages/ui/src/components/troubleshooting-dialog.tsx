@@ -174,9 +174,9 @@ function SkillsTab(props: SkillsTabProps) {
         </p>
         <div className="flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700">
           <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2.5">
-            npx claude-board
+            npx claude-queue
           </code>
-          <CopyButton text="npx claude-board" className="mr-2" />
+          <CopyButton text="npx claude-queue" className="mr-2" />
         </div>
         <p className="text-xs text-zinc-500 mt-2">
           This will reinstall the skill if it's missing.
@@ -230,7 +230,7 @@ function McpTab(props: McpTabProps) {
         <pre className="p-3 rounded-lg bg-zinc-800 text-xs font-mono text-zinc-300 overflow-x-auto">
 {`"${mcpName}": {
   "command": "npx",
-  "args": ["-y", "-p", "claude-board", "claude-board-mcp"],
+  "args": ["-y", "-p", "claude-queue", "claude-queue-mcp"],
   "env": {
     "KANBAN_SERVER_URL": "http://localhost:${port}"
   }
@@ -245,9 +245,9 @@ function McpTab(props: McpTabProps) {
         </p>
         <div className="flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700">
           <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2.5">
-            npx claude-board
+            npx claude-queue
           </code>
-          <CopyButton text="npx claude-board" className="mr-2" />
+          <CopyButton text="npx claude-queue" className="mr-2" />
         </div>
         <p className="text-xs text-zinc-500 mt-2">
           Then restart Claude Code to load the new MCP server.
@@ -525,7 +525,7 @@ function IssuesTab(props: IssuesTabProps) {
     {
       problem: '"Skill not found" error',
       solutions: [
-        "Run `npx claude-board` to reinstall skills",
+        "Run `npx claude-queue` to reinstall skills",
         "Check ~/.claude/skills/ directory exists",
         "Restart Claude Code after installing",
       ],
@@ -533,7 +533,7 @@ function IssuesTab(props: IssuesTabProps) {
     {
       problem: "MCP server connection errors",
       solutions: [
-        "Ensure the kanban server is running (check this page loads)",
+        "Ensure the queue server is running (check this page loads)",
         "Restart Claude Code to reload MCP servers",
         "Check ~/.claude/settings.json has the MCP config",
       ],

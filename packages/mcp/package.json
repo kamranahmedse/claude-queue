@@ -1,10 +1,10 @@
 {
-  "name": "@claude-board/mcp",
+  "name": "@claude-queue/mcp",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "claude-board-mcp": "./dist/index.js"
+    "claude-queue-mcp": "./dist/index.js"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts",

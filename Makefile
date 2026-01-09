@@ -1,4 +1,4 @@
-.PHONY: help install build dev setup clean build-package publish
+.PHONY: help install build dev setup clean build-package publish uninstall uninstall-legacy
 
 # Port for development
 DEV_PORT := 3334
@@ -29,7 +29,7 @@ dev: ## Start dev server + UI with hot reload
 	@echo "  │  (Port 3334 is the API server - don't use directly) │"
 	@echo "  └─────────────────────────────────────────────────────┘"
 	@echo ""
-	PORT=$(DEV_PORT) pnpm dev
+	PORT=$(DEV_PORT) DEV_PROJECT_ROOT=$(PWD) pnpm dev
 
 clean: ## Clean build artifacts and node_modules
 	rm -rf node_modules packages/*/node_modules packages/*/dist
@@ -38,9 +38,9 @@ clean: ## Clean build artifacts and node_modules
 # ============ Internal targets ============
 
 install-skills:
-	@mkdir -p $(SKILLS_DEST)/kanban $(SKILLS_DEST)/kanban-dev
-	@cp -r $(SKILLS_SRC)/kanban/* $(SKILLS_DEST)/kanban/
-	@cp -r $(SKILLS_SRC)/kanban-dev/* $(SKILLS_DEST)/kanban-dev/
+	@mkdir -p $(SKILLS_DEST)/queue $(SKILLS_DEST)/queue-dev
+	@cp -r $(SKILLS_SRC)/queue/* $(SKILLS_DEST)/queue/
+	@cp -r $(SKILLS_SRC)/queue-dev/* $(SKILLS_DEST)/queue-dev/
 	@echo "✓ Skills installed to $(SKILLS_DEST)"
 
 install-mcp:
@@ -49,7 +49,7 @@ install-mcp:
 		const fs = require("fs"); \
 		const settings = JSON.parse(fs.readFileSync("$(CLAUDE_SETTINGS)", "utf-8")); \
 		settings.mcpServers = settings.mcpServers || {}; \
-		settings.mcpServers["claude-board-dev"] = { \
+		settings.mcpServers["claude-queue-dev"] = { \
 			type: "stdio", \
 			command: "node", \
 			args: ["$(PWD)/packages/mcp/dist/index.js"], \
@@ -57,7 +57,44 @@ install-mcp:
 		}; \
 		fs.writeFileSync("$(CLAUDE_SETTINGS)", JSON.stringify(settings, null, 2)); \
 	'
-	@echo "✓ MCP 'claude-board-dev' configured (port $(DEV_PORT))"
+	@echo "✓ MCP 'claude-queue-dev' configured (port $(DEV_PORT))"
+
+# ============ Uninstall ============
+
+uninstall: ## Remove skills and MCP config (keeps database)
+	@echo "Removing skills..."
+	@rm -rf $(SKILLS_DEST)/queue $(SKILLS_DEST)/queue-dev
+	@echo "Removing MCP server configs..."
+	@if [ -f $(CLAUDE_SETTINGS) ]; then \
+		node -e '\
+			const fs = require("fs"); \
+			const settings = JSON.parse(fs.readFileSync("$(CLAUDE_SETTINGS)", "utf-8")); \
+			if (settings.mcpServers) { \
+				delete settings.mcpServers["claude-queue"]; \
+				delete settings.mcpServers["claude-queue-dev"]; \
+				fs.writeFileSync("$(CLAUDE_SETTINGS)", JSON.stringify(settings, null, 2)); \
+			} \
+		'; \
+	fi
+	@echo "✓ Uninstalled (database preserved in ~/.claude-queue)"
+
+uninstall-legacy: ## Remove old claude-board/kanban installations
+	@echo "Removing legacy skills (kanban, kanban-dev)..."
+	@rm -rf $(SKILLS_DEST)/kanban $(SKILLS_DEST)/kanban-dev
+	@echo "Removing legacy MCP server configs (claude-board, claude-board-dev)..."
+	@if [ -f $(CLAUDE_SETTINGS) ]; then \
+		node -e '\
+			const fs = require("fs"); \
+			const settings = JSON.parse(fs.readFileSync("$(CLAUDE_SETTINGS)", "utf-8")); \
+			if (settings.mcpServers) { \
+				delete settings.mcpServers["claude-board"]; \
+				delete settings.mcpServers["claude-board-dev"]; \
+				fs.writeFileSync("$(CLAUDE_SETTINGS)", JSON.stringify(settings, null, 2)); \
+			} \
+		'; \
+	fi
+	@echo "✓ Legacy installations removed"
+	@echo "  Note: Old database at ~/.claude-board preserved (delete manually if not needed)"
 
 # ============ Publishing ============
 
@@ -68,4 +105,4 @@ build-package: ## Build npm package for publishing
 publish: build-package ## Publish to npm (requires npm login)
 	@echo "\nPublishing to npm..."
 	cd packages/cli && npm publish
-	@echo "\n✓ Published claude-board to npm!"
+	@echo "\n✓ Published claude-queue to npm!"

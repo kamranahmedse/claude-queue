@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 
-const SOUND_ENABLED_KEY = "claude-board-sound-enabled";
+const SOUND_ENABLED_KEY = "claude-queue-sound-enabled";
 
 type SoundType = "complete" | "question" | "start";
 

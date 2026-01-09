@@ -5,6 +5,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import type { Server } from "http";
+import { customAlphabet } from "nanoid";
 
 import projectsRouter from "./api/projects.js";
 import tasksRouter from "./api/tasks.js";
@@ -18,6 +19,8 @@ import { closeDb, getDb } from "./db/index.js";
 import { log, logRequest } from "./logger.js";
 import { seedDefaultTemplates } from "./api/projects.js";
 
+const generateId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 4);
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function ensureDevProject(): void {
@@ -25,11 +28,11 @@ function ensureDevProject(): void {
   const projects = db.prepare("SELECT * FROM projects").all();
 
   if (projects.length === 0) {
-    const cwd = process.cwd();
-    const name = cwd.split("/").pop() || "dev";
-    const id = "kbn-dev";
+    const projectRoot = process.env.DEV_PROJECT_ROOT || process.cwd();
+    const name = projectRoot.split("/").pop() || "dev";
+    const id = `kbn-${generateId()}`;
 
-    db.prepare("INSERT INTO projects (id, path, name) VALUES (?, ?, ?)").run(id, cwd, name);
+    db.prepare("INSERT INTO projects (id, path, name) VALUES (?, ?, ?)").run(id, projectRoot, name);
     seedDefaultTemplates(id);
     log(`Auto-created dev project: ${id} (${name})`);
   }

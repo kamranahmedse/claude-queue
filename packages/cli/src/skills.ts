@@ -20,10 +20,10 @@ export async function configureMcp(): Promise<void> {
 
   const mcpServers = (settings.mcpServers as Record<string, unknown>) || {};
 
-  if (!mcpServers["claude-board"]) {
-    mcpServers["claude-board"] = {
+  if (!mcpServers["claude-queue"]) {
+    mcpServers["claude-queue"] = {
       command: "npx",
-      args: ["-y", "-p", "claude-board", "claude-board-mcp"],
+      args: ["-y", "-p", "claude-queue", "claude-queue-mcp"],
       env: {
         KANBAN_SERVER_URL: `http://localhost:${DEFAULT_PORT}`,
       },
@@ -35,12 +35,12 @@ export async function configureMcp(): Promise<void> {
 }
 
 function getSkillPath(): string {
-  const npmSkillPath = join(import.meta.dirname, "skills", "kanban", "SKILL.md");
+  const npmSkillPath = join(import.meta.dirname, "skills", "queue", "SKILL.md");
   if (existsSync(npmSkillPath)) {
     return npmSkillPath;
   }
 
-  const devSkillPath = join(import.meta.dirname, "..", "..", "skills", "kanban", "SKILL.md");
+  const devSkillPath = join(import.meta.dirname, "..", "..", "skills", "queue", "SKILL.md");
   if (existsSync(devSkillPath)) {
     return devSkillPath;
   }
@@ -49,10 +49,10 @@ function getSkillPath(): string {
 }
 
 export function installSkills(): void {
-  const kanbanSkillDir = join(SKILLS_DIR, "kanban");
-  const kanbanSkillFile = join(kanbanSkillDir, "SKILL.md");
+  const queueSkillDir = join(SKILLS_DIR, "queue");
+  const queueSkillFile = join(queueSkillDir, "SKILL.md");
 
-  if (existsSync(kanbanSkillFile)) {
+  if (existsSync(queueSkillFile)) {
     return;
   }
 
@@ -60,15 +60,15 @@ export function installSkills(): void {
     mkdirSync(SKILLS_DIR, { recursive: true });
   }
 
-  if (!existsSync(kanbanSkillDir)) {
-    mkdirSync(kanbanSkillDir, { recursive: true });
+  if (!existsSync(queueSkillDir)) {
+    mkdirSync(queueSkillDir, { recursive: true });
   }
 
   const skillSourcePath = getSkillPath();
   const skillContent = readFileSync(skillSourcePath, "utf-8");
 
-  writeFileSync(kanbanSkillFile, skillContent);
-  console.log("✓ Installed /kanban skill to ~/.claude/skills/kanban/");
+  writeFileSync(queueSkillFile, skillContent);
+  console.log("✓ Installed /queue skill to ~/.claude/skills/queue/");
 }
 
 export function removeMcp(): boolean {
@@ -87,23 +87,23 @@ export function removeMcp(): boolean {
 
   const mcpServers = (settings.mcpServers as Record<string, unknown>) || {};
 
-  if (!mcpServers["claude-board"]) {
+  if (!mcpServers["claude-queue"]) {
     return false;
   }
 
-  delete mcpServers["claude-board"];
+  delete mcpServers["claude-queue"];
   settings.mcpServers = mcpServers;
   writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   return true;
 }
 
 export function removeSkills(): boolean {
-  const kanbanSkillDir = join(SKILLS_DIR, "kanban");
+  const queueSkillDir = join(SKILLS_DIR, "queue");
 
-  if (!existsSync(kanbanSkillDir)) {
+  if (!existsSync(queueSkillDir)) {
     return false;
   }
 
-  rmSync(kanbanSkillDir, { recursive: true });
+  rmSync(queueSkillDir, { recursive: true });
   return true;
 }

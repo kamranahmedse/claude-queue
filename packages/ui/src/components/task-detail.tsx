@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, Trash2, Bot, User, Send, Pencil, Eye, History, ChevronDown, ImageIcon, Clock, CheckCheck, Inbox, CheckCircle2 } from "lucide-react";
+import { X, Trash2, Bot, User, Send, Pencil, Eye, History, ChevronDown, Clock, CheckCheck, Inbox, CheckCircle2 } from "lucide-react";
 import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask, listTasksOptions } from "~/queries/tasks";
-import { listAttachmentsOptions } from "~/queries/attachments";
 import { formatRelativeTime } from "~/hooks/use-relative-time";
 import { httpPost } from "~/lib/http";
 import { MarkdownRenderer } from "./markdown-renderer";
@@ -69,12 +68,10 @@ export function TaskDetail(props: TaskDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
-  const [showAttachments, setShowAttachments] = useState(true);
   const [currentTask, setCurrentTask] = useState(initialTask);
 
   const queryClient = useQueryClient();
   const { data: taskDetails } = useQuery(taskDetailsOptions(currentTask.id));
-  const { data: attachments = [] } = useQuery(listAttachmentsOptions(currentTask.id));
   const addComment = useAddComment(currentTask.id);
   const deleteComment = useDeleteComment(currentTask.id);
   const deleteTask = useDeleteTask();
@@ -185,23 +182,7 @@ export function TaskDetail(props: TaskDetailProps) {
           )}
 
           <div>
-            <button
-              onClick={() => setShowAttachments(!showAttachments)}
-              className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-400 py-2 transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <ImageIcon className="w-3.5 h-3.5" />
-                Images ({attachments.length})
-              </span>
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${showAttachments ? "rotate-180" : ""}`}
-              />
-            </button>
-            {showAttachments && (
-              <div className="mt-2">
-                <ImageUpload taskId={currentTask.id} disabled={isInProgress} />
-              </div>
-            )}
+            <ImageUpload taskId={currentTask.id} disabled={isInProgress} />
           </div>
 
           <div>

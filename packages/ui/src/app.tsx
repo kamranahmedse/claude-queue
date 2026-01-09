@@ -12,7 +12,7 @@ import { StatsDialog } from "~/components/stats-dialog";
 import { SettingsDialog } from "~/components/settings-dialog";
 import { CopyButton } from "~/components/copy-button";
 
-const HELP_SEEN_KEY = "claude-board-help-seen";
+const HELP_SEEN_KEY = "claude-queue-help-seen";
 
 export function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -126,8 +126,8 @@ export function App() {
             Run the following command in a project directory to get started:
           </p>
           <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-zinc-800 rounded-lg">
-            <code className="text-sm text-orange-400">npx claude-board</code>
-            <CopyButton text="npx claude-board" />
+            <code className="text-sm text-orange-400">npx claude-queue</code>
+            <CopyButton text="npx claude-queue" />
           </div>
         </div>
       </div>

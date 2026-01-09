@@ -9,12 +9,12 @@ import { handleSetBlocked, handleWaitForReply } from "./handlers/blocking.ts";
 import { handleCheckComments, handleAddComment } from "./handlers/comments.ts";
 
 const server = new McpServer({
-  name: "claude-board",
+  name: "claude-queue",
   version: "1.0.0",
 });
 
 server.registerTool(
-  "kanban_watch",
+  "queue_watch",
   {
     description: "Connect to a kanban board and start watching for tasks. Returns instructions for the watching loop.",
     inputSchema: {
@@ -27,7 +27,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  "kanban_get_tasks",
+  "queue_get_tasks",
   {
     description: "Get tasks from the board, optionally filtered by status",
     inputSchema: {
@@ -41,7 +41,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  "kanban_claim_task",
+  "queue_claim_task",
   {
     description: "Claim a ready task and move it to in_progress. Pass the current git commit hash as starting_commit - this will be used to reset changes if the task is cancelled.",
     inputSchema: {
@@ -55,7 +55,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  "kanban_update_activity",
+  "queue_update_activity",
   {
     description: "Update what you're currently doing on a task",
     inputSchema: {
@@ -69,7 +69,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  "kanban_set_blocked",
+  "queue_set_blocked",
   {
     description: "Mark task as blocked and ask user a question",
     inputSchema: {
@@ -83,7 +83,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  "kanban_wait_for_reply",
+  "queue_wait_for_reply",
   {
     description: "Poll until user replies to your question. Returns { reply: string } or { deleted: true } if task was deleted.",
     inputSchema: {
@@ -96,7 +96,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  "kanban_complete_task",
+  "queue_complete_task",
   {
     description: "Mark task as complete and move to done",
     inputSchema: {
@@ -109,7 +109,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  "kanban_check_comments",
+  "queue_check_comments",
   {
     description: "Check for new user comments on a task. Call this periodically while working to see if the user has left feedback or instructions.",
     inputSchema: {
@@ -123,7 +123,7 @@ server.registerTool(
 );
 
 server.registerTool(
-  "kanban_add_comment",
+  "queue_add_comment",
   {
     description: "Add a comment to a task. Use this to leave summaries or notes.",
     inputSchema: {

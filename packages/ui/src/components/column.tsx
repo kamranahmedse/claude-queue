@@ -51,7 +51,7 @@ interface ColumnProps {
   onAddTask?: () => void;
 }
 
-const COLLAPSED_KEY_PREFIX = "claude-board-column-collapsed-";
+const COLLAPSED_KEY_PREFIX = "claude-queue-column-collapsed-";
 
 export function Column(props: ColumnProps) {
   const {

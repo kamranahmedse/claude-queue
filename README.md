@@ -1,22 +1,22 @@
-# claude-board
+# claude-queue
 
-A local kanban board for managing Claude Code projects. Add tasks to the board, and Claude will pick them up, work through them autonomously, ask questions when blocked, and mark them complete.
+A local queue board for managing Claude Code projects. Add tasks to the board, and Claude will pick them up, work through them autonomously, ask questions when blocked, and mark them complete.
 
 ## Quick Start
 
 ```bash
 cd /path/to/your/project
-npx claude-board
+npx claude-queue
 ```
 
-This starts the kanban server and opens your board at `http://localhost:3333` with the empty project board.
+This starts the queue server and opens your board at `http://localhost:3333` with the empty project board.
 
-> On first run, it automatically configures the MCP server and installs the `/kanban` skill. **Restart Claude Code after first run** to load the MCP server.
+> On first run, it automatically configures the MCP server and installs the `/queue` skill. **Restart Claude Code after first run** to load the MCP server.
 
 Get the project ID/command from the top right of the web UI (e.g. `kbn-xxxx`). Then in Claude Code run:
 
 ```
-/kanban <project-id>
+/queue <project-id>
 ```
 
 Claude will start watching your board and work through tasks in the Ready column.
@@ -24,7 +24,7 @@ Claude will start watching your board and work through tasks in the Ready column
 ## How It Works
 
 1. **Add tasks** to the Ready column in the web UI
-2. **Run `/kanban`** in Claude Code
+2. **Run `/queue`** in Claude Code
 3. **Claude picks up tasks**, moves them to In Progress, and works on them
 4. **If blocked**, Claude asks a question—reply in the UI
 5. **When done**, Claude commits changes and moves the task to Done
@@ -40,52 +40,52 @@ Claude will start watching your board and work through tasks in the Ready column
 ## CLI Commands
 
 ```bash
-claude-board              # Start server (foreground)
-claude-board --detach     # Start server (background)
-claude-board status       # Check if server is running
-claude-board stop         # Stop background server
-claude-board list         # List all projects
-claude-board doctor       # Diagnose and fix issues
-claude-board uninstall    # Remove MCP and skill config
-claude-board uninstall --all  # Also remove all data
+claude-queue              # Start server (foreground)
+claude-queue --detach     # Start server (background)
+claude-queue status       # Check if server is running
+claude-queue stop         # Stop background server
+claude-queue list         # List all projects
+claude-queue doctor       # Diagnose and fix issues
+claude-queue uninstall    # Remove MCP and skill config
+claude-queue uninstall --all  # Also remove all data
 ```
 
 ## Upgrading
 
 The MCP server uses `npx -y` which automatically fetches the latest version. To upgrade:
 
-1. Stop the running server: `claude-board stop`
+1. Stop the running server: `claude-queue stop`
 2. Clear npm cache (optional): `npm cache clean --force`
-3. Start again: `npx claude-board`
+3. Start again: `npx claude-queue`
 
-The skill file at `~/.claude/skills/kanban/` is only written once. To update it, delete the folder and restart:
+The skill file at `~/.claude/skills/queue/` is only written once. To update it, delete the folder and restart:
 
 ```bash
-rm -rf ~/.claude/skills/kanban
-npx claude-board
+rm -rf ~/.claude/skills/queue
+npx claude-queue
 ```
 
 ## Uninstalling
 
-To remove claude-board from Claude Code:
+To remove claude-queue from Claude Code:
 
 ```bash
-npx claude-board uninstall
+npx claude-queue uninstall
 ```
 
-This removes the MCP server config from `~/.claude/settings.json` and the `/kanban` skill. Restart Claude Code after uninstalling.
+This removes the MCP server config from `~/.claude/settings.json` and the `/queue` skill. Restart Claude Code after uninstalling.
 
 To also remove all data (database, logs):
 
 ```bash
-npx claude-board uninstall --all
+npx claude-queue uninstall --all
 ```
 
 ## Status Indicators
 
 | Status | Meaning |
 |--------|---------|
-| **Start Claude** | Claude not running—run `/kanban` to start |
+| **Start Claude** | Claude not running—run `/queue` to start |
 | **Working** | Claude is working on a task |
 | **Blocked** | Claude needs your response—click the task to reply |
 | **Watching** | Claude is connected and waiting for tasks |
@@ -103,19 +103,19 @@ npx claude-board uninstall --all
 ## Data Storage
 
 All data is stored locally:
-- Database: `~/.claude-board/kanban.db`
-- Logs: `~/.claude-board/server.log`
+- Database: `~/.claude-queue/queue.db`
+- Logs: `~/.claude-queue/server.log`
 
 ## Development
 
 ```bash
-git clone https://github.com/kamranahmedse/claude-board.git
-cd claude-board
+git clone https://github.com/kamranahmedse/claude-queue.git
+cd claude-queue
 make setup    # Install deps, build, configure MCP
 make dev      # Start dev server with hot reload
 ```
 
-Use `/kanban-dev` in Claude Code to connect to the dev server (port 3334).
+Use `/queue-dev` in Claude Code to connect to the dev server (port 3334).
 
 ## License
 

@@ -31,7 +31,7 @@ export function Header(props: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 h-14 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
-        <h1 className="text-sm font-medium text-zinc-300">claude-board</h1>
+        <h1 className="text-sm font-medium text-zinc-300">claude-queue</h1>
         {projects.length > 0 && (
           <select
             value={project?.id || ""}

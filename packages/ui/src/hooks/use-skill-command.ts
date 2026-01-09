@@ -8,11 +8,11 @@ function isDevMode(): boolean {
 }
 
 export function useSkillCommand(): string {
-  return isDevMode() ? "/kanban-dev" : "/kanban";
+  return isDevMode() ? "/queue-dev" : "/queue";
 }
 
 export function useMcpName(): string {
-  return isDevMode() ? "claude-board-dev" : "claude-board";
+  return isDevMode() ? "claude-queue-dev" : "claude-queue";
 }
 
 export function usePort(): string {

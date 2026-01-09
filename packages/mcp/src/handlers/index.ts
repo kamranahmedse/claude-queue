@@ -13,13 +13,13 @@ export interface ToolResult {
 type Handler = (args: Record<string, unknown>) => Promise<ToolResult>;
 
 export const handlers: Record<string, Handler> = {
-  kanban_watch: handleWatch,
-  kanban_get_tasks: handleGetTasks,
-  kanban_claim_task: handleClaimTask,
-  kanban_update_activity: handleUpdateActivity,
-  kanban_set_blocked: handleSetBlocked,
-  kanban_wait_for_reply: handleWaitForReply,
-  kanban_complete_task: handleCompleteTask,
-  kanban_check_comments: handleCheckComments,
-  kanban_add_comment: handleAddComment,
+  queue_watch: handleWatch,
+  queue_get_tasks: handleGetTasks,
+  queue_claim_task: handleClaimTask,
+  queue_update_activity: handleUpdateActivity,
+  queue_set_blocked: handleSetBlocked,
+  queue_wait_for_reply: handleWaitForReply,
+  queue_complete_task: handleCompleteTask,
+  queue_check_comments: handleCheckComments,
+  queue_add_comment: handleAddComment,
 };

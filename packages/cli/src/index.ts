@@ -20,13 +20,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8"));
 
 program
-  .name("claude-board")
-  .description("Local kanban board for managing Claude Code projects")
+  .name("claude-queue")
+  .description("Local queue board for managing Claude Code projects")
   .version(pkg.version);
 
 program
   .command("start", { isDefault: true })
-  .description("Start the kanban server and register current directory as a project")
+  .description("Start the queue server and register current directory as a project")
   .option("-p, --port <port>", "Server port", DEFAULT_PORT.toString())
   .option("-d, --detach", "Run server in background")
   .option("-v, --verbose", "Verbose output")
@@ -44,7 +44,7 @@ program
 
     if (!running) {
       if (verbose) {
-        console.log("Starting kanban server...");
+        console.log("Starting queue server...");
       }
 
       const child = await startServer(port, detach, verbose);
@@ -87,7 +87,7 @@ program
     const port = parseInt(options.port);
 
     if (!(await isServerRunning(port))) {
-      console.error("Server is not running. Start it with: claude-board");
+      console.error("Server is not running. Start it with: claude-queue");
       process.exit(1);
     }
 
@@ -112,13 +112,13 @@ program
 
 program
   .command("delete <projectId>")
-  .description("Delete a project from the kanban")
+  .description("Delete a project from the queue")
   .option("-p, --port <port>", "Server port", DEFAULT_PORT.toString())
   .action(async (projectId, options) => {
     const port = parseInt(options.port);
 
     if (!(await isServerRunning(port))) {
-      console.error("Server is not running. Start it with: claude-board");
+      console.error("Server is not running. Start it with: claude-queue");
       process.exit(1);
     }
 
@@ -216,7 +216,7 @@ program
     }
 
     if (options.all) {
-      const dbFile = join(KANBAN_DIR, "kanban.db");
+      const dbFile = join(KANBAN_DIR, "queue.db");
       if (existsSync(LOG_FILE)) {
         await fs.unlink(LOG_FILE);
         removed.push("server.log");
@@ -227,7 +227,7 @@ program
       }
       if (existsSync(dbFile)) {
         await fs.unlink(dbFile);
-        removed.push("kanban.db");
+        removed.push("queue.db");
       }
     }
 
@@ -265,11 +265,11 @@ program
 
     const skillsRemoved = removeSkills();
     if (skillsRemoved) {
-      removed.push("/kanban skill");
+      removed.push("/queue skill");
     }
 
     if (options.all) {
-      const dbFile = join(KANBAN_DIR, "kanban.db");
+      const dbFile = join(KANBAN_DIR, "queue.db");
       if (existsSync(LOG_FILE)) {
         await fs.unlink(LOG_FILE);
         removed.push("server.log");
@@ -280,7 +280,7 @@ program
       }
       if (existsSync(dbFile)) {
         await fs.unlink(dbFile);
-        removed.push("kanban.db");
+        removed.push("queue.db");
       }
       if (existsSync(KANBAN_DIR)) {
         await fs.rmdir(KANBAN_DIR).catch(() => {});

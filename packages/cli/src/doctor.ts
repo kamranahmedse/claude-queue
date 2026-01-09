@@ -5,7 +5,7 @@ import { isServerRunning, getRunningPid, clearPid } from "./server.js";
 import { configureMcp, installSkills } from "./skills.js";
 
 export async function runDoctor(port: number, fix: boolean): Promise<void> {
-  console.log("\n🩺 Claude Kanban Doctor\n");
+  console.log("\n🩺 Claude Queue Doctor\n");
   console.log("Checking your setup...\n");
 
   let issues = 0;
@@ -29,7 +29,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
     try {
       const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
       const mcpServers = settings.mcpServers || {};
-      mcpConfigured = !!mcpServers["claude-board"];
+      mcpConfigured = !!mcpServers["claude-queue"];
       if (mcpConfigured) {
         console.log("✅ MCP server configured in settings.json");
       } else {
@@ -55,20 +55,20 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
 
   const skillPath = join(SKILLS_DIR, "kanban", "SKILL.md");
   if (existsSync(skillPath)) {
-    console.log("✅ /kanban skill installed");
+    console.log("✅ /queue skill installed");
   } else {
-    console.log("❌ /kanban skill not installed");
+    console.log("❌ /queue skill not installed");
     issues++;
     if (fix) {
       installSkills();
-      console.log("   → Installed /kanban skill");
+      console.log("   → Installed /queue skill");
     }
   }
 
   if (existsSync(KANBAN_DIR)) {
-    console.log("✅ Kanban data directory exists (~/.claude-board)");
+    console.log("✅ Queue data directory exists (~/.claude-queue)");
   } else {
-    console.log("⚠️  Kanban data directory not created yet");
+    console.log("⚠️  Queue data directory not created yet");
     warnings++;
   }
 
@@ -124,14 +124,14 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
     console.log(`❌ ${issues} issue(s) found, ${warnings} warning(s).\n`);
     if (!fix) {
       console.log("Run with --fix to attempt automatic fixes:");
-      console.log("  npx claude-board doctor --fix\n");
+      console.log("  npx claude-queue doctor --fix\n");
     }
   }
 
   console.log("Quick reference:");
-  console.log("  Start server:     npx claude-board");
+  console.log("  Start server:     npx claude-queue");
   console.log("  View board:       http://localhost:" + port);
-  console.log("  Run skill:        /kanban <project-id>");
-  console.log("  View logs:        npx claude-board logs -f");
+  console.log("  Run skill:        /queue <project-id>");
+  console.log("  View logs:        npx claude-queue logs -f");
   console.log("");
 }

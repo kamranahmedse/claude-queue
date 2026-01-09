@@ -3,7 +3,7 @@ import { Plus, HelpCircle, LayoutTemplate, ChevronLeft } from "lucide-react";
 import type { Template, TaskStatus } from "~/types";
 import { TemplateCard } from "./template-card";
 
-const COLLAPSED_KEY = "claude-board-templates-collapsed";
+const COLLAPSED_KEY = "claude-queue-templates-collapsed";
 const TEMPLATE_DRAG_TYPE = "application/x-template";
 
 interface TemplateColumnProps {
@@ -181,7 +181,7 @@ export function TemplateColumn(props: TemplateColumnProps) {
 
   return (
     <div className="w-[300px] shrink-0 select-none flex flex-col border-r border-zinc-800 pr-3">
-      <div className="sticky top-0 z-10 bg-zinc-950 flex items-center justify-between py-3 px-1">
+      <div className={`sticky top-0 bg-zinc-950 flex items-center justify-between py-3 px-1 ${showHelp ? "z-20" : "z-10"}`}>
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleToggleCollapse}
@@ -194,9 +194,9 @@ export function TemplateColumn(props: TemplateColumnProps) {
           <div className="relative" ref={helpRef}>
             <button
               onClick={() => setShowHelp(!showHelp)}
-              className="p-0.5 text-zinc-600 hover:text-indigo-400 rounded transition-colors"
+              className="p-1 text-zinc-600 hover:text-indigo-400 rounded transition-colors"
             >
-              <HelpCircle className="w-3.5 h-3.5" />
+              <HelpCircle className="w-3 h-3" />
             </button>
             {showHelp && (
               <div className="absolute left-0 top-full mt-1 w-64 p-3 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50">
