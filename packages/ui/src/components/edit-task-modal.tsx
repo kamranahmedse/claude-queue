@@ -1,52 +1,33 @@
-import { useState, useEffect } from "react";
-import { X, FileText, ChevronDown, ImageIcon } from "lucide-react";
-import { ImageDropzone, cleanupPendingImages, type PendingImage } from "./image-dropzone";
-import type { TaskStatus, Template } from "~/types";
+import { useState } from "react";
+import { X } from "lucide-react";
+import type { Task } from "~/types";
 
-interface AddTaskModalProps {
-  status: TaskStatus;
-  initialTemplate?: Template | null;
+interface EditTaskModalProps {
+  task: Task;
   onClose: () => void;
-  onSubmit: (title: string, description: string, images: File[]) => void;
+  onSubmit: (title: string, description: string) => void;
   isLoading: boolean;
 }
 
-export function AddTaskModal(props: AddTaskModalProps) {
-  const { status, initialTemplate, onClose, onSubmit, isLoading } = props;
+export function EditTaskModal(props: EditTaskModalProps) {
+  const { task, onClose, onSubmit, isLoading } = props;
 
-  const [title, setTitle] = useState(initialTemplate?.title || "");
-  const [description, setDescription] = useState(initialTemplate?.description || "");
-  const [images, setImages] = useState<PendingImage[]>([]);
-  const [showImages, setShowImages] = useState(false);
-
-  useEffect(() => {
-    if (initialTemplate) {
-      setTitle(initialTemplate.title);
-      setDescription(initialTemplate.description || "");
-    }
-  }, [initialTemplate]);
-
-  useEffect(() => {
-    return () => {
-      cleanupPendingImages(images);
-    };
-  }, []);
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       return;
     }
-    const files = images.map((img) => img.file);
-    onSubmit(title.trim(), description.trim(), files);
+    onSubmit(title.trim(), description.trim());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       if (title.trim()) {
-        const files = images.map((img) => img.file);
-        onSubmit(title.trim(), description.trim(), files);
+        onSubmit(title.trim(), description.trim());
       }
     }
   };
@@ -56,9 +37,7 @@ export function AddTaskModal(props: AddTaskModalProps) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div className="relative w-full max-w-md mx-4 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-          <h2 className="text-sm font-medium text-zinc-200">
-            {initialTemplate ? `Create from template` : "Add task"} to {status.replace("_", " ")}
-          </h2>
+          <h2 className="text-sm font-medium text-zinc-200">Edit task</h2>
           <button
             onClick={onClose}
             className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
@@ -67,12 +46,6 @@ export function AddTaskModal(props: AddTaskModalProps) {
           </button>
         </div>
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="p-4 space-y-4">
-          {initialTemplate && (
-            <div className="p-2 bg-indigo-900/20 border border-indigo-700/30 rounded-lg flex items-center gap-2">
-              <FileText className="w-4 h-4 text-indigo-400" />
-              <span className="text-xs text-indigo-300">From template: {initialTemplate.title}</span>
-            </div>
-          )}
           <div>
             <label
               htmlFor="title"
@@ -106,30 +79,6 @@ export function AddTaskModal(props: AddTaskModalProps) {
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 resize-none"
             />
           </div>
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowImages(!showImages)}
-              className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-400 py-2 transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <ImageIcon className="w-3.5 h-3.5" />
-                Images{images.length > 0 && ` (${images.length})`}
-              </span>
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${showImages ? "rotate-180" : ""}`}
-              />
-            </button>
-            {showImages && (
-              <div className="mt-2">
-                <ImageDropzone
-                  images={images}
-                  onImagesChange={setImages}
-                  compact
-                />
-              </div>
-            )}
-          </div>
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
@@ -143,7 +92,7 @@ export function AddTaskModal(props: AddTaskModalProps) {
               disabled={!title.trim() || isLoading}
               className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
-              {isLoading ? "Adding..." : "Add task"}
+              {isLoading ? "Saving..." : "Save changes"}
             </button>
           </div>
         </form>

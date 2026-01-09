@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { X, Trash2, Bot, User, Send, Pencil, Check, Eye, History, ChevronDown, ImageIcon, Clock, CheckCheck, Inbox, CheckCircle2 } from "lucide-react";
-import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { X, Trash2, Bot, User, Send, Pencil, Eye, History, ChevronDown, ImageIcon, Clock, CheckCheck, Inbox, CheckCircle2 } from "lucide-react";
+import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask, listTasksOptions } from "~/queries/tasks";
 import { listAttachmentsOptions } from "~/queries/attachments";
 import { formatRelativeTime } from "~/hooks/use-relative-time";
 import { MarkdownRenderer } from "./markdown-renderer";
 import { ConfirmDialog } from "./confirm-dialog";
 import { ActivityTimeline } from "./activity-timeline";
 import { ImageUpload } from "./image-upload";
+import { EditTaskModal } from "./edit-task-modal";
 import type { Task, TaskStatus } from "~/types";
 
 interface TaskDetailProps {
@@ -39,26 +40,26 @@ const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: React.ReactNode; 
 };
 
 export function TaskDetail(props: TaskDetailProps) {
-  const { task, onClose } = props;
+  const { task: initialTask, onClose } = props;
 
   const [comment, setComment] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(task.title);
-  const [editDescription, setEditDescription] = useState(task.description || "");
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const [showAttachments, setShowAttachments] = useState(true);
+  const [currentTask, setCurrentTask] = useState(initialTask);
 
-  const { data: taskDetails } = useQuery(taskDetailsOptions(task.id));
-  const { data: attachments = [] } = useQuery(listAttachmentsOptions(task.id));
-  const addComment = useAddComment(task.id);
-  const deleteComment = useDeleteComment(task.id);
+  const queryClient = useQueryClient();
+  const { data: taskDetails } = useQuery(taskDetailsOptions(currentTask.id));
+  const { data: attachments = [] } = useQuery(listAttachmentsOptions(currentTask.id));
+  const addComment = useAddComment(currentTask.id);
+  const deleteComment = useDeleteComment(currentTask.id);
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
 
-  const canEdit = task.status !== "in_progress";
-  const isInProgress = task.status === "in_progress";
-  const statusConfig = STATUS_CONFIG[task.status];
+  const canEdit = currentTask.status !== "in_progress" && currentTask.status !== "done";
+  const isInProgress = currentTask.status === "in_progress";
+  const statusConfig = STATUS_CONFIG[currentTask.status];
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,30 +72,24 @@ export function TaskDetail(props: TaskDetailProps) {
   };
 
   const handleDelete = () => {
-    deleteTask.mutate(task.id, {
+    deleteTask.mutate(currentTask.id, {
       onSuccess: () => onClose(),
     });
   };
 
-  const handleStartEdit = () => {
-    setEditTitle(task.title);
-    setEditDescription(task.description || "");
-    setIsEditing(true);
-  };
-
-  const handleSaveEdit = () => {
-    const trimmedTitle = editTitle.trim();
-    if (!trimmedTitle) {
-      return;
-    }
+  const handleSaveEdit = (title: string, description: string) => {
     updateTask.mutate(
       {
-        taskId: task.id,
-        title: trimmedTitle,
-        description: editDescription.trim() || undefined,
+        taskId: currentTask.id,
+        title,
+        description: description || null,
       },
       {
-        onSuccess: () => setIsEditing(false),
+        onSuccess: (updatedTask) => {
+          setCurrentTask(updatedTask);
+          setShowEditModal(false);
+          queryClient.invalidateQueries({ queryKey: listTasksOptions(currentTask.project_id).queryKey });
+        },
       }
     );
   };
@@ -116,48 +111,28 @@ export function TaskDetail(props: TaskDetailProps) {
                 {statusConfig.icon}
                 {statusConfig.label}
               </span>
-              {task.blocked && (
+              {currentTask.blocked && (
                 <span className="px-2 py-0.5 text-xs bg-red-900/50 text-red-400 rounded-full">
                   Blocked
                 </span>
               )}
             </div>
-            {isEditing ? (
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm font-medium text-zinc-200 focus:outline-none focus:border-zinc-600"
-                autoFocus
-              />
-            ) : (
-              <h2 className="text-sm font-medium text-zinc-200 text-balance">
-                {task.title}
-              </h2>
-            )}
+            <h2 className="text-sm font-medium text-zinc-200 text-balance">
+              {currentTask.title}
+            </h2>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            {canEdit && !isEditing && (
+            {canEdit && (
               <button
-                onClick={handleStartEdit}
+                onClick={() => setShowEditModal(true)}
                 className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
                 title="Edit task"
               >
                 <Pencil className="w-4 h-4" />
               </button>
             )}
-            {isEditing && (
-              <button
-                onClick={handleSaveEdit}
-                disabled={!editTitle.trim() || updateTask.isPending}
-                className="p-1 text-green-500 hover:text-green-400 hover:bg-zinc-800 rounded transition-colors disabled:opacity-50"
-                title="Save changes"
-              >
-                <Check className="w-4 h-4" />
-              </button>
-            )}
             <button
-              onClick={isEditing ? () => setIsEditing(false) : onClose}
+              onClick={onClose}
               className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
             >
               <X className="w-4 h-4" />
@@ -166,30 +141,19 @@ export function TaskDetail(props: TaskDetailProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {isEditing ? (
-            <div>
-              <h3 className="text-xs text-zinc-500 mb-2">Description</h3>
-              <textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Add a description..."
-                rows={4}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 resize-none"
-              />
-            </div>
-          ) : task.description ? (
+          {currentTask.description && (
             <div>
               <h3 className="text-xs text-zinc-500 mb-2">Description</h3>
               <p className="text-sm text-zinc-300 whitespace-pre-wrap text-balance">
-                {task.description}
+                {currentTask.description}
               </p>
             </div>
-          ) : null}
+          )}
 
-          {task.current_activity && (
+          {currentTask.current_activity && (
             <div className="p-3 bg-orange-900/20 rounded-lg">
               <h3 className="text-xs text-orange-400 mb-1">Current Activity</h3>
-              <p className="text-sm text-zinc-300">{task.current_activity}</p>
+              <p className="text-sm text-zinc-300">{currentTask.current_activity}</p>
             </div>
           )}
 
@@ -208,7 +172,7 @@ export function TaskDetail(props: TaskDetailProps) {
             </button>
             {showAttachments && (
               <div className="mt-2">
-                <ImageUpload taskId={task.id} disabled={isInProgress} />
+                <ImageUpload taskId={currentTask.id} disabled={isInProgress} />
               </div>
             )}
           </div>
@@ -307,6 +271,15 @@ export function TaskDetail(props: TaskDetailProps) {
           </button>
         </div>
       </div>
+
+      {showEditModal && (
+        <EditTaskModal
+          task={currentTask}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={handleSaveEdit}
+          isLoading={updateTask.isPending}
+        />
+      )}
 
       {showDeleteConfirm && (
         <ConfirmDialog

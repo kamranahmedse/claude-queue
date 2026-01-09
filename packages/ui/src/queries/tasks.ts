@@ -46,7 +46,7 @@ export function useUpdateTask() {
     }: {
       taskId: string;
       title?: string;
-      description?: string;
+      description?: string | null;
       blocked?: boolean;
       current_activity?: string;
     }) => httpPatch<Task>(`/tasks/${taskId}`, data),

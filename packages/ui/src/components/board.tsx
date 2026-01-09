@@ -2,6 +2,8 @@ import { useState, useMemo, forwardRef, useImperativeHandle, useCallback } from 
 import { useQuery } from "@tanstack/react-query";
 import { listTasksOptions, useCreateTask, useMoveTask, useDeleteAllTasks, useTasksRefetchInterval } from "~/queries/tasks";
 import { listTemplatesOptions, useCreateTemplate, useMoveTemplate, useUpdateTemplate } from "~/queries/templates";
+import { httpPost } from "~/lib/http";
+import type { Attachment } from "~/types";
 import { useTaskNotifications } from "~/hooks/use-task-notifications";
 import { DragProvider, useDragContext } from "~/hooks/use-drag-and-drop";
 import type { Task, TaskStatus, Template } from "~/types";
@@ -12,6 +14,28 @@ import { TaskDetail } from "./task-detail";
 import { AddTaskModal } from "./add-task-modal";
 import { AddTemplateModal } from "./add-template-modal";
 import { EditTemplateModal } from "./edit-template-modal";
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadAttachment(taskId: string, file: File): Promise<Attachment> {
+  const data = await fileToBase64(file);
+  return httpPost<Attachment>(`/attachments/task/${taskId}`, {
+    filename: file.name,
+    data,
+    mimeType: file.type,
+  });
+}
 
 interface BoardProps {
   projectId: string;
@@ -152,14 +176,17 @@ function BoardContent(props: BoardContentProps) {
     [templates, moveTemplate, setDragItem]
   );
 
-  const handleAddTask = (title: string, description: string) => {
+  const handleAddTask = async (title: string, description: string, images: File[]) => {
     if (!addTaskStatus) {
       return;
     }
     createTask.mutate(
       { title, description: description || undefined, status: addTaskStatus },
       {
-        onSuccess: () => {
+        onSuccess: async (task) => {
+          if (images.length > 0) {
+            await Promise.all(images.map((file) => uploadAttachment(task.id, file)));
+          }
           setAddTaskStatus(null);
           setAddTaskFromTemplate(null);
         },
