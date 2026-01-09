@@ -40,11 +40,10 @@ function formatDuration(
 interface TaskCardProps {
   task: Task;
   onClick?: () => void;
-  isDragging?: boolean;
 }
 
 export function TaskCard(props: TaskCardProps) {
-  const { task, onClick, isDragging = false } = props;
+  const { task, onClick } = props;
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -91,7 +90,6 @@ export function TaskCard(props: TaskCardProps) {
         className={`
           p-3 rounded-lg border select-none
           ${isLocked ? "cursor-default" : "cursor-grab active:cursor-grabbing"}
-          ${isDragging ? "opacity-50" : ""}
           ${isLocked && !task.blocked ? "in-progress-glow" : ""}
           ${
             task.blocked

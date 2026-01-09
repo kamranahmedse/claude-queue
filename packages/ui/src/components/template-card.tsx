@@ -7,11 +7,10 @@ import type { Template } from "~/types";
 interface TemplateCardProps {
   template: Template;
   onClick?: () => void;
-  isDragging?: boolean;
 }
 
 export function TemplateCard(props: TemplateCardProps) {
-  const { template, onClick, isDragging = false } = props;
+  const { template, onClick } = props;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteTemplate = useDeleteTemplate();
@@ -31,11 +30,7 @@ export function TemplateCard(props: TemplateCardProps) {
     <>
       <div
         onClick={onClick}
-        className={`
-          group p-3 rounded-lg border select-none cursor-grab active:cursor-grabbing
-          ${isDragging ? "opacity-50" : ""}
-          bg-indigo-900/20 border-indigo-700/30 hover:border-indigo-600/50
-        `}
+        className="group p-3 rounded-lg border select-none cursor-grab active:cursor-grabbing bg-indigo-900/20 border-indigo-700/30 hover:border-indigo-600/50"
       >
         <div className="flex items-start gap-2">
           <FileText className="shrink-0 w-3.5 h-3.5 mt-0.5 text-indigo-400" />

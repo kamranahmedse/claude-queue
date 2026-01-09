@@ -1,11 +1,10 @@
-import { useState, useMemo, forwardRef, useImperativeHandle, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listTasksOptions, useCreateTask, useMoveTask, useDeleteAllTasks, useTasksRefetchInterval } from "~/queries/tasks";
 import { listTemplatesOptions, useCreateTemplate, useMoveTemplate, useUpdateTemplate } from "~/queries/templates";
 import { httpPost } from "~/lib/http";
 import type { Attachment } from "~/types";
 import { useTaskNotifications } from "~/hooks/use-task-notifications";
-import { DragProvider } from "~/hooks/use-drag-and-drop";
 import type { Task, TaskStatus, Template } from "~/types";
 import { COLUMNS } from "~/types";
 import { Column } from "./column";
@@ -69,6 +68,16 @@ function BoardContent(props: BoardContentProps) {
   const [addTaskStatus, setAddTaskStatus] = useState<TaskStatus | null>(null);
   const [addTaskFromTemplate, setAddTaskFromTemplate] = useState<Template | null>(null);
   const [showAddTemplate, setShowAddTemplate] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [justDroppedTaskId, setJustDroppedTaskId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!justDroppedTaskId) {
+      return;
+    }
+    const timer = setTimeout(() => setJustDroppedTaskId(null), 600);
+    return () => clearTimeout(timer);
+  }, [justDroppedTaskId]);
 
   useImperativeHandle(boardRef, () => ({
     openAddTask: () => setAddTaskStatus("ready"),
@@ -91,6 +100,7 @@ function BoardContent(props: BoardContentProps) {
     ...listTemplatesOptions(projectId),
     refetchInterval: 5000,
   });
+  const queryClient = useQueryClient();
   const createTask = useCreateTask(projectId);
   const moveTask = useMoveTask();
   const deleteAllTasks = useDeleteAllTasks(projectId);
@@ -125,13 +135,64 @@ function BoardContent(props: BoardContentProps) {
 
   const handleMoveTask = useCallback(
     (taskId: string, toStatus: TaskStatus, toPosition: number) => {
+      queryClient.setQueryData<Task[]>(["tasks", projectId], (oldTasks) => {
+        if (!oldTasks) {
+          return oldTasks;
+        }
+
+        const taskToMove = oldTasks.find((t) => t.id === taskId);
+        if (!taskToMove) {
+          return oldTasks;
+        }
+
+        const oldStatus = taskToMove.status;
+        const updatedTasks = oldTasks.map((t) => {
+          if (t.id === taskId) {
+            return { ...t, status: toStatus, position: toPosition };
+          }
+          return t;
+        });
+
+        const tasksInTargetStatus = updatedTasks
+          .filter((t) => t.status === toStatus && t.id !== taskId)
+          .sort((a, b) => a.position - b.position);
+
+        let newPosition = toPosition;
+        for (const t of tasksInTargetStatus) {
+          if (t.position >= toPosition) {
+            const idx = updatedTasks.findIndex((ut) => ut.id === t.id);
+            if (idx !== -1) {
+              newPosition++;
+              updatedTasks[idx] = { ...updatedTasks[idx], position: newPosition };
+            }
+          }
+        }
+
+        if (oldStatus !== toStatus) {
+          const tasksInOldStatus = updatedTasks
+            .filter((t) => t.status === oldStatus)
+            .sort((a, b) => a.position - b.position);
+
+          tasksInOldStatus.forEach((t, index) => {
+            const idx = updatedTasks.findIndex((ut) => ut.id === t.id);
+            if (idx !== -1) {
+              updatedTasks[idx] = { ...updatedTasks[idx], position: index };
+            }
+          });
+        }
+
+        return updatedTasks;
+      });
+
+      setJustDroppedTaskId(taskId);
+
       moveTask.mutate({
         taskId,
         status: toStatus,
         position: toPosition,
       });
     },
-    [moveTask]
+    [moveTask, queryClient, projectId]
   );
 
   const handleMoveTemplate = useCallback(
@@ -204,77 +265,85 @@ function BoardContent(props: BoardContentProps) {
   const showLoading = isLoading || isLoadingTemplates;
 
   return (
-    <DragProvider
-      tasksByStatus={tasksByStatus}
-      templates={templates}
-      onMoveTask={handleMoveTask}
-      onMoveTemplate={handleMoveTemplate}
-      onTemplateDropOnColumn={handleTemplateDropOnColumn}
-    >
-      <div className="flex-1 flex flex-col min-h-0 relative">
-        {showLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-10">
-            <div className="text-sm text-zinc-500">Loading...</div>
-          </div>
-        )}
-        <div className="flex-1 pt-0 pb-4 px-4 overflow-auto">
-          <div className="flex gap-0 items-stretch min-h-full w-max">
-            <TemplateColumn
-              templates={sortedTemplates}
-              onTemplateClick={setEditingTemplate}
-              onAddClick={() => setShowAddTemplate(true)}
-            />
-            {COLUMNS.map((column, index) => (
-              <Column
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                tasks={tasksByStatus[column.id]}
-                onTaskClick={setSelectedTask}
-                onDeleteAll={
-                  column.id !== "in_progress"
-                    ? () => deleteAllTasks.mutate(column.id)
-                    : undefined
-                }
-                isDeleting={deleteAllTasks.isPending}
-                showBorder={index < COLUMNS.length - 1}
-              />
-            ))}
-          </div>
+    <div className="flex-1 flex flex-col min-h-0 relative">
+      {showLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-10">
+          <div className="text-sm text-zinc-500">Loading...</div>
         </div>
-
-        {selectedTask && (
-          <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
-        )}
-
-        {addTaskStatus && (
-          <AddTaskModal
-            status={addTaskStatus}
-            initialTemplate={addTaskFromTemplate}
-            onClose={handleCloseAddTask}
-            onSubmit={handleAddTask}
-            isLoading={createTask.isPending}
+      )}
+      <div className="flex-1 pt-0 pb-4 px-4 overflow-auto">
+        <div className="flex gap-0 items-stretch min-h-full w-max">
+          <TemplateColumn
+            templates={sortedTemplates}
+            onTemplateClick={setEditingTemplate}
+            onAddClick={() => setShowAddTemplate(true)}
+            onMoveTemplate={handleMoveTemplate}
+            onTemplateDropOnColumn={handleTemplateDropOnColumn}
+            isDragging={isDragging}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={() => setIsDragging(false)}
           />
-        )}
-
-        {showAddTemplate && (
-          <AddTemplateModal
-            onClose={() => setShowAddTemplate(false)}
-            onSubmit={handleAddTemplate}
-            isLoading={createTemplate.isPending}
-          />
-        )}
-
-        {editingTemplate && (
-          <EditTemplateModal
-            template={editingTemplate}
-            onClose={() => setEditingTemplate(null)}
-            onSubmit={handleUpdateTemplate}
-            isLoading={updateTemplate.isPending}
-          />
-        )}
+          {COLUMNS.map((column, index) => (
+            <Column
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              tasks={tasksByStatus[column.id]}
+              onTaskClick={setSelectedTask}
+              onDeleteAll={
+                column.id !== "in_progress"
+                  ? () => deleteAllTasks.mutate(column.id)
+                  : undefined
+              }
+              isDeleting={deleteAllTasks.isPending}
+              showBorder={index < COLUMNS.length - 1}
+              onMoveTask={handleMoveTask}
+              onTemplateDropOnColumn={handleTemplateDropOnColumn}
+              isDragging={isDragging}
+              onDragStart={() => setIsDragging(true)}
+              onDragEnd={() => setIsDragging(false)}
+              justDroppedTaskId={justDroppedTaskId}
+              onAddTask={
+                column.id !== "in_progress"
+                  ? () => setAddTaskStatus(column.id)
+                  : undefined
+              }
+            />
+          ))}
+        </div>
       </div>
-    </DragProvider>
+
+      {selectedTask && (
+        <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
+      )}
+
+      {addTaskStatus && (
+        <AddTaskModal
+          status={addTaskStatus}
+          initialTemplate={addTaskFromTemplate}
+          onClose={handleCloseAddTask}
+          onSubmit={handleAddTask}
+          isLoading={createTask.isPending}
+        />
+      )}
+
+      {showAddTemplate && (
+        <AddTemplateModal
+          onClose={() => setShowAddTemplate(false)}
+          onSubmit={handleAddTemplate}
+          isLoading={createTemplate.isPending}
+        />
+      )}
+
+      {editingTemplate && (
+        <EditTemplateModal
+          template={editingTemplate}
+          onClose={() => setEditingTemplate(null)}
+          onSubmit={handleUpdateTemplate}
+          isLoading={updateTemplate.isPending}
+        />
+      )}
+    </div>
   );
 }
 
