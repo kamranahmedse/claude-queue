@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { HelpCircle, Wrench, Volume2, VolumeX, BarChart3 } from "lucide-react";
+import { HelpCircle, Wrench, Volume2, VolumeX, BarChart3, Settings } from "lucide-react";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
 import { useSoundEnabled } from "~/hooks/use-sound";
 import { useSkillCommand } from "~/hooks/use-skill-command";
@@ -14,10 +14,11 @@ interface HeaderProps {
   onHelpClick: () => void;
   onTroubleshootClick: () => void;
   onStatsClick: () => void;
+  onSettingsClick: () => void;
 }
 
 export function Header(props: HeaderProps) {
-  const { project, projects, onProjectChange, onHelpClick, onTroubleshootClick, onStatsClick } = props;
+  const { project, projects, onProjectChange, onHelpClick, onTroubleshootClick, onStatsClick, onSettingsClick } = props;
 
   const refetchInterval = useTasksRefetchInterval();
   const { data: tasks = [] } = useQuery({
@@ -72,6 +73,13 @@ export function Header(props: HeaderProps) {
           title={soundEnabled ? "Disable sound notifications" : "Enable sound notifications"}
         >
           {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </button>
+        <button
+          onClick={onSettingsClick}
+          className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+          title="Settings"
+        >
+          <Settings className="w-4 h-4" />
         </button>
         <button
           onClick={onTroubleshootClick}

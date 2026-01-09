@@ -67,6 +67,24 @@ export async function httpPatch<T>(
   return response.json();
 }
 
+export async function httpPut<T>(
+  url: string,
+  body: Record<string, unknown>
+): Promise<T> {
+  const response = await fetch(`${API_URL}${url}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new FetchError(response.status, text);
+  }
+
+  return response.json();
+}
+
 export async function httpDelete<T>(url: string): Promise<T> {
   const response = await fetch(`${API_URL}${url}`, {
     method: "DELETE",

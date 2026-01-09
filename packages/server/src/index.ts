@@ -10,6 +10,8 @@ import projectsRouter from "./api/projects.js";
 import tasksRouter from "./api/tasks.js";
 import commentsRouter from "./api/comments.js";
 import templatesRouter from "./api/templates.js";
+import attachmentsRouter from "./api/attachments.js";
+import promptsRouter from "./api/prompts.js";
 import healthRouter from "./api/health.js";
 import maintenanceRouter from "./api/maintenance.js";
 import { closeDb } from "./db/index.js";
@@ -21,7 +23,7 @@ export function createServer(port = 3333): { app: Express; server: Server } {
   const app = express();
 
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: "50mb" }));
 
   app.use((req, res, next) => {
     const start = Date.now();
@@ -39,6 +41,8 @@ export function createServer(port = 3333): { app: Express; server: Server } {
   app.use("/api/tasks", tasksRouter);
   app.use("/api/comments", commentsRouter);
   app.use("/api/templates", templatesRouter);
+  app.use("/api/attachments", attachmentsRouter);
+  app.use("/api/prompts", promptsRouter);
   app.use("/api/maintenance", maintenanceRouter);
   app.use("/health", healthRouter);
 

@@ -1,17 +1,42 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Trash2, Bot, User, Send, Pencil, Check, Eye, History, ChevronDown } from "lucide-react";
+import { X, Trash2, Bot, User, Send, Pencil, Check, Eye, History, ChevronDown, ImageIcon, Clock, CheckCheck, Inbox, CheckCircle2 } from "lucide-react";
 import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask } from "~/queries/tasks";
+import { listAttachmentsOptions } from "~/queries/attachments";
 import { formatRelativeTime } from "~/hooks/use-relative-time";
 import { MarkdownRenderer } from "./markdown-renderer";
 import { ConfirmDialog } from "./confirm-dialog";
 import { ActivityTimeline } from "./activity-timeline";
-import type { Task } from "~/types";
+import { ImageUpload } from "./image-upload";
+import type { Task, TaskStatus } from "~/types";
 
 interface TaskDetailProps {
   task: Task;
   onClose: () => void;
 }
+
+const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: React.ReactNode; className: string }> = {
+  backlog: {
+    label: "Backlog",
+    icon: <Inbox className="w-3 h-3" />,
+    className: "bg-zinc-800 text-zinc-400",
+  },
+  ready: {
+    label: "Ready",
+    icon: <CheckCircle2 className="w-3 h-3" />,
+    className: "bg-green-900/50 text-green-400",
+  },
+  in_progress: {
+    label: "In Progress",
+    icon: <Clock className="w-3 h-3" />,
+    className: "bg-orange-900/50 text-orange-400",
+  },
+  done: {
+    label: "Done",
+    icon: <CheckCheck className="w-3 h-3" />,
+    className: "bg-blue-900/50 text-blue-400",
+  },
+};
 
 export function TaskDetail(props: TaskDetailProps) {
   const { task, onClose } = props;
@@ -22,14 +47,18 @@ export function TaskDetail(props: TaskDetailProps) {
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDescription, setEditDescription] = useState(task.description || "");
   const [showActivity, setShowActivity] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(true);
 
   const { data: taskDetails } = useQuery(taskDetailsOptions(task.id));
+  const { data: attachments = [] } = useQuery(listAttachmentsOptions(task.id));
   const addComment = useAddComment(task.id);
   const deleteComment = useDeleteComment(task.id);
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
 
   const canEdit = task.status !== "in_progress";
+  const isInProgress = task.status === "in_progress";
+  const statusConfig = STATUS_CONFIG[task.status];
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,19 +110,32 @@ export function TaskDetail(props: TaskDetailProps) {
       />
       <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-zinc-950 border-l border-zinc-800 flex flex-col">
         <div className="flex items-start justify-between p-4 border-b border-zinc-800">
-          {isEditing ? (
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              className="flex-1 mr-2 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm font-medium text-zinc-200 focus:outline-none focus:border-zinc-600"
-              autoFocus
-            />
-          ) : (
-            <h2 className="text-sm font-medium text-zinc-200 pr-4">
-              {task.title}
-            </h2>
-          )}
+          <div className="flex-1 min-w-0 pr-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs rounded-full ${statusConfig.className}`}>
+                {statusConfig.icon}
+                {statusConfig.label}
+              </span>
+              {task.blocked && (
+                <span className="px-2 py-0.5 text-xs bg-red-900/50 text-red-400 rounded-full">
+                  Blocked
+                </span>
+              )}
+            </div>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm font-medium text-zinc-200 focus:outline-none focus:border-zinc-600"
+                autoFocus
+              />
+            ) : (
+              <h2 className="text-sm font-medium text-zinc-200 text-balance">
+                {task.title}
+              </h2>
+            )}
+          </div>
           <div className="flex items-center gap-1 shrink-0">
             {canEdit && !isEditing && (
               <button
@@ -138,32 +180,40 @@ export function TaskDetail(props: TaskDetailProps) {
           ) : task.description ? (
             <div>
               <h3 className="text-xs text-zinc-500 mb-2">Description</h3>
-              <p className="text-sm text-zinc-300 whitespace-pre-wrap">
+              <p className="text-sm text-zinc-300 whitespace-pre-wrap text-balance">
                 {task.description}
               </p>
             </div>
           ) : null}
 
-          <div className="flex items-center gap-4 text-xs">
-            <div>
-              <span className="text-zinc-500">Status:</span>{" "}
-              <span className="text-zinc-300">{task.status.replace("_", " ")}</span>
-            </div>
-            {task.blocked && (
-              <span className="px-2 py-0.5 bg-red-900/50 text-red-400 rounded">
-                Blocked
-              </span>
-            )}
-          </div>
-
           {task.current_activity && (
-            <div>
-              <h3 className="text-xs text-zinc-500 mb-1">Current Activity</h3>
-              <p className="text-sm text-zinc-400">{task.current_activity}</p>
+            <div className="p-3 bg-orange-900/20 rounded-lg">
+              <h3 className="text-xs text-orange-400 mb-1">Current Activity</h3>
+              <p className="text-sm text-zinc-300">{task.current_activity}</p>
             </div>
           )}
 
-          <div className="pt-4 border-t border-zinc-800">
+          <div>
+            <button
+              onClick={() => setShowAttachments(!showAttachments)}
+              className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-400 py-2 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <ImageIcon className="w-3.5 h-3.5" />
+                Images ({attachments.length})
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${showAttachments ? "rotate-180" : ""}`}
+              />
+            </button>
+            {showAttachments && (
+              <div className="mt-2">
+                <ImageUpload taskId={task.id} disabled={isInProgress} />
+              </div>
+            )}
+          </div>
+
+          <div>
             <h3 className="text-xs text-zinc-500 mb-3">
               Comments ({comments.length})
             </h3>
@@ -171,7 +221,7 @@ export function TaskDetail(props: TaskDetailProps) {
               {comments.map((c) => (
                 <div
                   key={c.id}
-                  className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg group"
+                  className="p-3 bg-zinc-900/50 rounded-lg group"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     {c.author === "claude" ? (
@@ -210,10 +260,10 @@ export function TaskDetail(props: TaskDetailProps) {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-zinc-800">
+          <div>
             <button
               onClick={() => setShowActivity(!showActivity)}
-              className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50 rounded-lg px-2 py-2 -mx-2 transition-colors"
+              className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-400 py-2 transition-colors"
             >
               <span className="flex items-center gap-2">
                 <History className="w-3.5 h-3.5" />
@@ -224,7 +274,7 @@ export function TaskDetail(props: TaskDetailProps) {
               />
             </button>
             {showActivity && (
-              <div className="mt-3">
+              <div className="mt-2">
                 <ActivityTimeline activities={activities} />
               </div>
             )}

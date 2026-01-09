@@ -1,4 +1,4 @@
-import type { Task, Comment, TaskStatus, TaskActivity, TaskActivityType } from "../types.js";
+import type { Task, Comment, TaskStatus, TaskActivity, TaskActivityType, Attachment, Prompt, PromptType } from "../types.js";
 
 export interface TaskRow {
   id: string;
@@ -49,6 +49,37 @@ export interface TaskActivityRow {
 }
 
 export function rowToTaskActivity(row: TaskActivityRow): TaskActivity {
+  return {
+    ...row,
+  };
+}
+
+export interface AttachmentRow {
+  id: string;
+  task_id: string;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  created_at: string;
+}
+
+export function rowToAttachment(row: AttachmentRow): Attachment {
+  return {
+    ...row,
+  };
+}
+
+export interface PromptRow {
+  id: string;
+  project_id: string | null;
+  type: PromptType;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function rowToPrompt(row: PromptRow): Prompt {
   return {
     ...row,
   };

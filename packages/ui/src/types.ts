@@ -53,6 +53,16 @@ export interface Template {
   created_at: string;
 }
 
+export interface Attachment {
+  id: string;
+  task_id: string;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  created_at: string;
+}
+
 export type TaskActivityType =
   | "created"
   | "status_change"
@@ -72,4 +82,15 @@ export interface TaskActivity {
 
 export interface TaskWithActivities extends TaskWithComments {
   activities: TaskActivity[];
+}
+
+export type PromptType = "master" | "project";
+
+export interface Prompt {
+  id: string;
+  project_id: string | null;
+  type: PromptType;
+  content: string;
+  created_at: string;
+  updated_at: string;
 }

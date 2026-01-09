@@ -9,6 +9,7 @@ import { Board, type BoardRef } from "~/components/board";
 import { HelpDialog } from "~/components/help-dialog";
 import { TroubleshootingDialog } from "~/components/troubleshooting-dialog";
 import { StatsDialog } from "~/components/stats-dialog";
+import { SettingsDialog } from "~/components/settings-dialog";
 import { CopyButton } from "~/components/copy-button";
 
 const HELP_SEEN_KEY = "claude-kanban-help-seen";
@@ -20,6 +21,7 @@ export function App() {
   });
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const boardRef = useRef<BoardRef>(null);
 
   const refetchInterval = useTasksRefetchInterval();
@@ -58,7 +60,7 @@ export function App() {
     window.history.replaceState({}, "", url.toString());
   };
 
-  const hasAnyModalOpen = showHelp || showTroubleshooting || showStats;
+  const hasAnyModalOpen = showHelp || showTroubleshooting || showStats || showSettings;
 
   const closeAllModals = () => {
     if (showHelp) {
@@ -69,6 +71,9 @@ export function App() {
     }
     if (showStats) {
       setShowStats(false);
+    }
+    if (showSettings) {
+      setShowSettings(false);
     }
     boardRef.current?.closeModals();
   };
@@ -149,6 +154,7 @@ export function App() {
         onHelpClick={() => setShowHelp(true)}
         onTroubleshootClick={() => setShowTroubleshooting(true)}
         onStatsClick={() => setShowStats(true)}
+        onSettingsClick={() => setShowSettings(true)}
       />
       {selectedProjectId && <Board ref={boardRef} projectId={selectedProjectId} />}
       {!selectedProjectId && (
@@ -168,6 +174,12 @@ export function App() {
         <StatsDialog
           project={selectedProject}
           onClose={() => setShowStats(false)}
+        />
+      )}
+      {showSettings && (
+        <SettingsDialog
+          projectId={selectedProjectId}
+          onClose={() => setShowSettings(false)}
         />
       )}
     </div>
