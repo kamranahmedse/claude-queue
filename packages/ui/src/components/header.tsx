@@ -2,11 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { HelpCircle, Wrench, Volume2, VolumeX, BarChart3 } from "lucide-react";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
 import { useSoundEnabled } from "~/hooks/use-sound";
+import { useSkillCommand } from "~/hooks/use-skill-command";
 import { ClaudeStatus } from "./claude-status";
 import { CopyButton } from "./copy-button";
 import type { Project } from "~/types";
-
-const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
 
 interface HeaderProps {
   project: Project | null;
@@ -28,6 +27,7 @@ export function Header(props: HeaderProps) {
   });
 
   const [soundEnabled, setSoundEnabled] = useSoundEnabled();
+  const skillCommand = useSkillCommand();
 
   return (
     <header className="sticky top-0 z-20 h-14 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between px-4">
@@ -52,9 +52,9 @@ export function Header(props: HeaderProps) {
         {project && (
           <div className="flex items-center gap-1.5 bg-zinc-800/50 rounded-lg border border-zinc-700/50 px-2 py-1">
             <code className="text-xs font-mono text-zinc-400">
-              {SKILL_COMMAND} {project.id}
+              {skillCommand} {project.id}
             </code>
-            <CopyButton text={`${SKILL_COMMAND} ${project.id}`} />
+            <CopyButton text={`${skillCommand} ${project.id}`} />
           </div>
         )}
         {project && (

@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { X, Rocket, GitBranch, MessageCircle, Lightbulb, Inbox, CheckCircle2, Clock, CheckCheck, FileText, Keyboard } from "lucide-react";
 import { CopyButton } from "./copy-button";
+import { useSkillCommand } from "~/hooks/use-skill-command";
 
 interface HelpDialogProps {
   projectId: string | null;
   onClose: () => void;
 }
-
-const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
 
 type TabId = "overview" | "workflow" | "interaction" | "shortcuts" | "tips";
 
@@ -21,11 +20,12 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 interface OverviewTabProps {
   projectId: string | null;
+  skillCommand: string;
 }
 
 function OverviewTab(props: OverviewTabProps) {
-  const { projectId } = props;
-  const fullCommand = projectId ? `${SKILL_COMMAND} ${projectId}` : `${SKILL_COMMAND} <project-id>`;
+  const { projectId, skillCommand } = props;
+  const fullCommand = projectId ? `${skillCommand} ${projectId}` : `${skillCommand} <project-id>`;
 
   return (
     <div className="space-y-5">
@@ -216,6 +216,7 @@ function TipsTab() {
 export function HelpDialog(props: HelpDialogProps) {
   const { projectId, onClose } = props;
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const skillCommand = useSkillCommand();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -254,7 +255,7 @@ export function HelpDialog(props: HelpDialogProps) {
           </nav>
 
           <div className="flex-1 p-4 overflow-y-auto min-h-[550px]">
-            {activeTab === "overview" && <OverviewTab projectId={projectId} />}
+            {activeTab === "overview" && <OverviewTab projectId={projectId} skillCommand={skillCommand} />}
             {activeTab === "workflow" && <WorkflowTab />}
             {activeTab === "interaction" && <InteractionTab />}
             {activeTab === "shortcuts" && <ShortcutsTab />}

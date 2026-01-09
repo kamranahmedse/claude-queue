@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MessageSquare, RotateCcw, XCircle, Lock, Clock } from "lucide-react";
+import { Clock, Lock, RotateCcw, XCircle } from "lucide-react";
 import { useAddComment } from "~/queries/tasks";
 import { ConfirmDialog } from "./confirm-dialog";
 import { Tooltip } from "./tooltip";
 import type { Task } from "~/types";
 
-function formatDuration(startedAt: string | null, completedAt: string | null): string | null {
+function formatDuration(
+  startedAt: string | null,
+  completedAt: string | null,
+): string | null {
   if (!startedAt || !completedAt) {
     return null;
   }
@@ -49,16 +52,13 @@ export function TaskCard(props: TaskCardProps) {
 
   const isLocked = task.status === "in_progress";
   const isDone = task.status === "done";
-  const duration = isDone ? formatDuration(task.started_at, task.completed_at) : null;
+  const duration = isDone
+    ? formatDuration(task.started_at, task.completed_at)
+    : null;
   const addComment = useAddComment(task.id);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    isDragging,
-  } = useSortable({ id: task.id, disabled: isLocked });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useSortable({ id: task.id, disabled: isLocked });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -75,15 +75,21 @@ export function TaskCard(props: TaskCardProps) {
   };
 
   const handleConfirmReset = () => {
-    addComment.mutate("[ACTION:RESET] Please reset all changes and start this task fresh.", {
-      onSuccess: () => setShowResetConfirm(false),
-    });
+    addComment.mutate(
+      "[ACTION:RESET] Please reset all changes and start this task fresh.",
+      {
+        onSuccess: () => setShowResetConfirm(false),
+      },
+    );
   };
 
   const handleConfirmCancel = () => {
-    addComment.mutate("[ACTION:CANCEL] Please stop working on this task and move it to backlog.", {
-      onSuccess: () => setShowCancelConfirm(false),
-    });
+    addComment.mutate(
+      "[ACTION:CANCEL] Please stop working on this task and move it to backlog.",
+      {
+        onSuccess: () => setShowCancelConfirm(false),
+      },
+    );
   };
 
   return (
@@ -102,8 +108,8 @@ export function TaskCard(props: TaskCardProps) {
           task.blocked
             ? "bg-red-900/20 border-red-500/50 hover:border-red-500"
             : isLocked
-            ? "bg-zinc-900 border-orange-500/30"
-            : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
+              ? "bg-zinc-900 border-orange-500/30"
+              : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
         }
       `}
     >
@@ -135,7 +141,6 @@ export function TaskCard(props: TaskCardProps) {
           maxWidth={350}
         >
           <div className="mt-2 flex items-center gap-1 text-zinc-600 cursor-help">
-            <MessageSquare className="w-3 h-3" />
             <span className="text-xs line-clamp-2">{task.description}</span>
           </div>
         </Tooltip>

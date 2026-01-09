@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Loader2, AlertCircle, ChevronDown, Terminal } from "lucide-react";
 import { CopyButton } from "./copy-button";
+import { useSkillCommand } from "~/hooks/use-skill-command";
 import type { Task, Project } from "~/types";
 
 interface ClaudeStatusProps {
@@ -8,12 +9,11 @@ interface ClaudeStatusProps {
   tasks: Task[];
 }
 
-const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
-
 export function ClaudeStatus(props: ClaudeStatusProps) {
   const { project, tasks } = props;
 
   const [showPopover, setShowPopover] = useState(false);
+  const skillCommand = useSkillCommand();
 
   if (!project) {
     return null;
@@ -48,7 +48,7 @@ export function ClaudeStatus(props: ClaudeStatusProps) {
       color: "text-zinc-400",
       bgColor: "bg-zinc-800",
       description: "Run this command in Claude Code to start working:",
-      command: `${SKILL_COMMAND} ${project.id}`,
+      command: `${skillCommand} ${project.id}`,
     };
   };
 

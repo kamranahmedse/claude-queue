@@ -54,18 +54,15 @@ export function Column(props: ColumnProps) {
         <div className="sticky top-0 z-10 bg-zinc-950 py-3 px-1">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-zinc-400">{title}</h3>
-            <div className="flex items-center gap-2">
-              {tasks.length > 0 && onDeleteAll && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="p-1 text-zinc-600 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
-                  title="Clear all tasks"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <span className="text-xs text-zinc-600">{tasks.length}</span>
-            </div>
+            {tasks.length > 0 && onDeleteAll && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-1 text-zinc-600 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                title="Clear all tasks"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           {lastActivity && (
             <p className="text-[10px] text-zinc-600 mt-0.5">

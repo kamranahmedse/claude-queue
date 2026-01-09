@@ -1,5 +1,11 @@
 import { Router, type Router as RouterType } from "express";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { getDb } from "../db/index.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, "..", "..", "package.json"), "utf-8"));
 
 const router: RouterType = Router();
 const startTime = Date.now();
@@ -22,7 +28,7 @@ router.get("/", (_req, res) => {
 
   res.json({
     status: "ok",
-    version: "1.0.0",
+    version: pkg.version,
     uptime,
     database: "connected",
     projects: projectsWithCounts,

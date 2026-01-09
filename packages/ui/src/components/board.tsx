@@ -214,6 +214,12 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
       const overTemplate = serverTemplates.find((t) => t.id === over.id);
       if (overTemplate) {
         const overIndex = serverTemplates.findIndex((t) => t.id === over.id);
+
+        // Only update if position actually changed
+        if (templateOverInfo?.position === overIndex) {
+          return;
+        }
+
         setTemplateOverInfo({ position: overIndex });
         setTemplateDropTarget(null);
 
@@ -267,11 +273,19 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
     }
 
     setIsDraggingOverInProgress(false);
+
+    // Only update if position actually changed
+    if (overInfo?.status === targetStatus && overInfo?.position === targetPosition) {
+      return;
+    }
+
     setOverInfo({ status: targetStatus, position: targetPosition });
 
-    // Always update optimistic state to ensure visual feedback
-    const newTasks = reorderTasks(serverTasks, draggedTask.id, targetStatus, targetPosition);
-    setOptimisticTasks(newTasks);
+    // Only update optimistic state if position changed from dragged task's original position
+    if (draggedTask.status !== targetStatus || draggedTask.position !== targetPosition) {
+      const newTasks = reorderTasks(serverTasks, draggedTask.id, targetStatus, targetPosition);
+      setOptimisticTasks(newTasks);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {

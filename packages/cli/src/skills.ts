@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { CLAUDE_DIR, SKILLS_DIR, DEFAULT_PORT } from "./constants.js";
 
@@ -69,4 +69,41 @@ export function installSkills(): void {
 
   writeFileSync(kanbanSkillFile, skillContent);
   console.log("✓ Installed /kanban skill to ~/.claude/skills/kanban/");
+}
+
+export function removeMcp(): boolean {
+  const settingsPath = join(CLAUDE_DIR, "settings.json");
+
+  if (!existsSync(settingsPath)) {
+    return false;
+  }
+
+  let settings: Record<string, unknown> = {};
+  try {
+    settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
+  } catch {
+    return false;
+  }
+
+  const mcpServers = (settings.mcpServers as Record<string, unknown>) || {};
+
+  if (!mcpServers["claude-kanban"]) {
+    return false;
+  }
+
+  delete mcpServers["claude-kanban"];
+  settings.mcpServers = mcpServers;
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+  return true;
+}
+
+export function removeSkills(): boolean {
+  const kanbanSkillDir = join(SKILLS_DIR, "kanban");
+
+  if (!existsSync(kanbanSkillDir)) {
+    return false;
+  }
+
+  rmSync(kanbanSkillDir, { recursive: true });
+  return true;
 }

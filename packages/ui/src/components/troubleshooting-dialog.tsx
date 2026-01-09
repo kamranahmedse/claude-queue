@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { httpDelete, httpGet, httpPost } from "~/lib/http";
 import { CopyButton } from "./copy-button";
 import { ConfirmDialog } from "./confirm-dialog";
+import { useSkillCommand, useMcpName, usePort } from "~/hooks/use-skill-command";
 import type { Project, Task } from "~/types";
 
 interface TroubleshootingDialogProps {
@@ -11,10 +12,6 @@ interface TroubleshootingDialogProps {
   tasks: Task[];
   onClose: () => void;
 }
-
-const SKILL_COMMAND = import.meta.env.DEV ? "/kanban-dev" : "/kanban";
-const MCP_NAME = import.meta.env.DEV ? "claude-kanban-dev" : "claude-kanban";
-const PORT = import.meta.env.DEV ? "3334" : "3333";
 
 type TabId = "status" | "skills" | "mcp" | "issues" | "actions";
 
@@ -61,10 +58,11 @@ function StatusItem(props: StatusItemProps) {
 interface StatusTabProps {
   project: Project | null;
   tasks: Task[];
+  port: string;
 }
 
 function StatusTab(props: StatusTabProps) {
-  const { project, tasks } = props;
+  const { project, tasks, port } = props;
 
   const inProgressTask = tasks.find((t) => t.status === "in_progress");
   const readyTasks = tasks.filter((t) => t.status === "ready");
@@ -98,7 +96,7 @@ function StatusTab(props: StatusTabProps) {
   };
 
   const getServerStatus = (): StatusItemProps => {
-    return { label: "Server", status: "ok", message: `Running on port ${PORT}` };
+    return { label: "Server", status: "ok", message: `Running on port ${port}` };
   };
 
   const getTasksStatus = (): StatusItemProps => {
@@ -144,24 +142,25 @@ function StatusTab(props: StatusTabProps) {
 
 interface SkillsTabProps {
   projectId: string | null;
+  skillCommand: string;
 }
 
 function SkillsTab(props: SkillsTabProps) {
-  const { projectId } = props;
-  const fullCommand = projectId ? `${SKILL_COMMAND} ${projectId}` : `${SKILL_COMMAND} <project-id>`;
+  const { projectId, skillCommand } = props;
+  const fullCommand = projectId ? `${skillCommand} ${projectId}` : `${skillCommand} <project-id>`;
 
   return (
     <div className="space-y-5">
       <section>
         <h3 className="text-sm font-medium text-zinc-200 mb-2">Check Skill Installation</h3>
         <p className="text-sm text-zinc-400 mb-3">
-          Skills should be installed at <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-cyan-400 text-xs">~/.claude/skills/{SKILL_COMMAND.slice(1)}/</code>
+          Skills should be installed at <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-cyan-400 text-xs">~/.claude/skills/{skillCommand.slice(1)}/</code>
         </p>
         <div className="flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700">
           <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2.5">
-            ls ~/.claude/skills/{SKILL_COMMAND.slice(1)}/
+            ls ~/.claude/skills/{skillCommand.slice(1)}/
           </code>
-          <CopyButton text={`ls ~/.claude/skills/${SKILL_COMMAND.slice(1)}/`} className="mr-2" />
+          <CopyButton text={`ls ~/.claude/skills/${skillCommand.slice(1)}/`} className="mr-2" />
         </div>
         <p className="text-xs text-zinc-500 mt-2">
           You should see <code className="text-zinc-400">SKILL.md</code> in the output.
@@ -200,7 +199,14 @@ function SkillsTab(props: SkillsTabProps) {
   );
 }
 
-function McpTab() {
+interface McpTabProps {
+  mcpName: string;
+  port: string;
+}
+
+function McpTab(props: McpTabProps) {
+  const { mcpName, port } = props;
+
   return (
     <div className="space-y-5">
       <section>
@@ -210,9 +216,9 @@ function McpTab() {
         </p>
         <div className="flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700">
           <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2.5">
-            cat ~/.claude/settings.json | grep -A5 "{MCP_NAME}"
+            cat ~/.claude/settings.json | grep -A5 "{mcpName}"
           </code>
-          <CopyButton text={`cat ~/.claude/settings.json | grep -A5 "${MCP_NAME}"`} className="mr-2" />
+          <CopyButton text={`cat ~/.claude/settings.json | grep -A5 "${mcpName}"`} className="mr-2" />
         </div>
       </section>
 
@@ -222,11 +228,11 @@ function McpTab() {
           You should see something like:
         </p>
         <pre className="p-3 rounded-lg bg-zinc-800 text-xs font-mono text-zinc-300 overflow-x-auto">
-{`"${MCP_NAME}": {
+{`"${mcpName}": {
   "command": "npx",
   "args": ["-y", "-p", "claude-kanban", "claude-kanban-mcp"],
   "env": {
-    "KANBAN_SERVER_URL": "http://localhost:${PORT}"
+    "KANBAN_SERVER_URL": "http://localhost:${port}"
   }
 }`}
         </pre>
@@ -508,7 +514,12 @@ function ActionsTab() {
   );
 }
 
-function IssuesTab() {
+interface IssuesTabProps {
+  skillCommand: string;
+}
+
+function IssuesTab(props: IssuesTabProps) {
+  const { skillCommand } = props;
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const issues = [
@@ -517,14 +528,14 @@ function IssuesTab() {
       solutions: [
         "Ensure tasks are in the \"Ready\" column (not Backlog)",
         "Check that Claude is connected (see Status tab)",
-        `Run ${SKILL_COMMAND} <project-id> in Claude Code`,
+        `Run ${skillCommand} <project-id> in Claude Code`,
         "Make sure there's no task already in progress",
       ],
     },
     {
       problem: "Claude shows as disconnected",
       solutions: [
-        `Run the skill command: ${SKILL_COMMAND} <project-id>`,
+        `Run the skill command: ${skillCommand} <project-id>`,
         "Restart Claude Code and try again",
         "Check that the MCP server is configured (see MCP Server tab)",
       ],
@@ -577,6 +588,9 @@ function IssuesTab() {
 export function TroubleshootingDialog(props: TroubleshootingDialogProps) {
   const { project, tasks, onClose } = props;
   const [activeTab, setActiveTab] = useState<TabId>("status");
+  const skillCommand = useSkillCommand();
+  const mcpName = useMcpName();
+  const port = usePort();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -615,10 +629,10 @@ export function TroubleshootingDialog(props: TroubleshootingDialogProps) {
           </nav>
 
           <div className="flex-1 p-4 overflow-y-auto min-h-[450px]">
-            {activeTab === "status" && <StatusTab project={project} tasks={tasks} />}
-            {activeTab === "skills" && <SkillsTab projectId={project?.id || null} />}
-            {activeTab === "mcp" && <McpTab />}
-            {activeTab === "issues" && <IssuesTab />}
+            {activeTab === "status" && <StatusTab project={project} tasks={tasks} port={port} />}
+            {activeTab === "skills" && <SkillsTab projectId={project?.id || null} skillCommand={skillCommand} />}
+            {activeTab === "mcp" && <McpTab mcpName={mcpName} port={port} />}
+            {activeTab === "issues" && <IssuesTab skillCommand={skillCommand} />}
             {activeTab === "actions" && <ActionsTab />}
           </div>
         </div>

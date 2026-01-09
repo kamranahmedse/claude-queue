@@ -3,6 +3,7 @@ import cors from "cors";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import type { Server } from "http";
 
 import projectsRouter from "./api/projects.js";
@@ -41,17 +42,30 @@ export function createServer(port = 3333): { app: Express; server: Server } {
   app.use("/api/maintenance", maintenanceRouter);
   app.use("/health", healthRouter);
 
-  const uiPaths = [
-    join(__dirname, "../ui"),        // npm package: dist/server/../ui = dist/ui
-    join(__dirname, "../../ui/dist") // development: dist/../../ui/dist
-  ];
+  const isDev = process.env.NODE_ENV === "development";
+  const viteDevPort = process.env.VITE_DEV_PORT || "5173";
 
-  const uiPath = uiPaths.find((p) => existsSync(join(p, "index.html")));
-  if (uiPath) {
-    app.use(express.static(uiPath));
-    app.get("*", (_req, res) => {
-      res.sendFile(join(uiPath, "index.html"));
-    });
+  if (isDev) {
+    app.use(
+      createProxyMiddleware({
+        target: `http://localhost:${viteDevPort}`,
+        changeOrigin: true,
+        ws: true,
+      })
+    );
+  } else {
+    const uiPaths = [
+      join(__dirname, "../ui"),        // npm package: dist/server/../ui = dist/ui
+      join(__dirname, "../../ui/dist") // development: dist/../../ui/dist
+    ];
+
+    const uiPath = uiPaths.find((p) => existsSync(join(p, "index.html")));
+    if (uiPath) {
+      app.use(express.static(uiPath));
+      app.get("*", (_req, res) => {
+        res.sendFile(join(uiPath, "index.html"));
+      });
+    }
   }
 
   const server = app.listen(port, () => {

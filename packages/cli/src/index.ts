@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { program } from "commander";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { DEFAULT_PORT, KANBAN_DIR, LOG_FILE, PID_FILE } from "./constants.js";
 import {
   ensureKanbanDir,
@@ -11,13 +13,16 @@ import {
   waitForServer,
 } from "./server.js";
 import { registerProject } from "./project.js";
-import { configureMcp, installSkills } from "./skills.js";
+import { configureMcp, installSkills, removeMcp, removeSkills } from "./skills.js";
 import { runDoctor } from "./doctor.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8"));
 
 program
   .name("claude-kanban")
   .description("Local kanban board for managing Claude Code projects")
-  .version("1.0.0");
+  .version(pkg.version);
 
 program
   .command("start", { isDefault: true })
@@ -242,6 +247,52 @@ program
     const port = parseInt(options.port);
     const fix = options.fix || false;
     await runDoctor(port, fix);
+  });
+
+program
+  .command("uninstall")
+  .description("Remove MCP server and skill from Claude Code configuration")
+  .option("--all", "Also remove all data (database, logs)")
+  .action(async (options) => {
+    const fs = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const removed: string[] = [];
+
+    const mcpRemoved = removeMcp();
+    if (mcpRemoved) {
+      removed.push("MCP server config");
+    }
+
+    const skillsRemoved = removeSkills();
+    if (skillsRemoved) {
+      removed.push("/kanban skill");
+    }
+
+    if (options.all) {
+      const dbFile = join(KANBAN_DIR, "kanban.db");
+      if (existsSync(LOG_FILE)) {
+        await fs.unlink(LOG_FILE);
+        removed.push("server.log");
+      }
+      if (existsSync(PID_FILE)) {
+        await fs.unlink(PID_FILE);
+        removed.push("server.pid");
+      }
+      if (existsSync(dbFile)) {
+        await fs.unlink(dbFile);
+        removed.push("kanban.db");
+      }
+      if (existsSync(KANBAN_DIR)) {
+        await fs.rmdir(KANBAN_DIR).catch(() => {});
+      }
+    }
+
+    if (removed.length === 0) {
+      console.log("Nothing to uninstall");
+    } else {
+      console.log(`✓ Removed: ${removed.join(", ")}`);
+      console.log("\nRestart Claude Code to complete the uninstall.");
+    }
   });
 
 program.parse();
