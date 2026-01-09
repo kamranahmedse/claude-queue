@@ -38,9 +38,10 @@ Repeat continuously:
    - If `{ "deleted": true }` and NOT a git repo, just go to step 1 (changes cannot be auto-reverted)
    - If `{ "timeout": true }`, call `kanban_wait_for_reply` again
 9. **Final check**: Before completing, call `kanban_check_comments` one last time to ensure no new feedback was left during your work
-10. **Add summary** (REQUIRED): ALWAYS add a completion summary using `kanban_add_comment` before completing. Example: "✅ Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
-11. **Complete**: Call `kanban_complete_task`, then commit changes (git repos only)
-12. **Repeat** from step 1
+10. **Add summary** (REQUIRED): ALWAYS add a completion summary using `kanban_add_comment` BEFORE calling complete. Example: "✅ Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
+11. **Complete**: Call `kanban_complete_task` to move the task to Done (the comment from step 10 must already be added)
+12. **Commit** (git repos only): Commit changes after completing
+13. **Repeat** from step 1
 
 ## Rules
 

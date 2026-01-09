@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
-import { ChevronDown, ImageIcon } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ImageIcon } from "lucide-react";
 import { ImageDropzone, cleanupPendingImages, type PendingImage } from "./image-dropzone";
+
+const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
 
 interface TaskTemplateFormProps {
   initialTitle?: string;
@@ -34,7 +36,6 @@ export function TaskTemplateForm(props: TaskTemplateFormProps) {
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [images, setImages] = useState<PendingImage[]>([]);
-  const [showImages, setShowImages] = useState(false);
 
   useEffect(() => {
     setTitle(initialTitle);
@@ -46,6 +47,46 @@ export function TaskTemplateForm(props: TaskTemplateFormProps) {
       cleanupPendingImages(images);
     };
   }, []);
+
+  const handleAddImageFiles = useCallback((files: File[]) => {
+    const imageFiles = files.filter((file) =>
+      ACCEPTED_IMAGE_TYPES.includes(file.type)
+    );
+
+    if (imageFiles.length === 0) {
+      return;
+    }
+
+    const newImages: PendingImage[] = imageFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+
+    setImages((prev) => [...prev, ...newImages]);
+  }, []);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) {
+      return;
+    }
+
+    const imageFiles: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          imageFiles.push(file);
+        }
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      handleAddImageFiles(imageFiles);
+    }
+  }, [handleAddImageFiles]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +108,7 @@ export function TaskTemplateForm(props: TaskTemplateFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="p-4 space-y-4">
+    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} onPaste={handlePaste} className="p-4 space-y-4">
       {headerContent}
       <div>
         <label
@@ -103,28 +144,15 @@ export function TaskTemplateForm(props: TaskTemplateFormProps) {
         />
       </div>
       <div>
-        <button
-          type="button"
-          onClick={() => setShowImages(!showImages)}
-          className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-400 py-2 transition-colors"
-        >
-          <span className="flex items-center gap-2">
-            <ImageIcon className="w-3.5 h-3.5" />
-            Images{images.length > 0 && ` (${images.length})`}
-          </span>
-          <ChevronDown
-            className={`w-4 h-4 transition-transform ${showImages ? "rotate-180" : ""}`}
-          />
-        </button>
-        {showImages && (
-          <div className="mt-2">
-            <ImageDropzone
-              images={images}
-              onImagesChange={setImages}
-              compact
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
+          <ImageIcon className="w-3.5 h-3.5" />
+          <span>Images{images.length > 0 && ` (${images.length})`}</span>
+        </div>
+        <ImageDropzone
+          images={images}
+          onImagesChange={setImages}
+          compact
+        />
       </div>
       <div className="flex items-center justify-end gap-3 pt-2">
         <button

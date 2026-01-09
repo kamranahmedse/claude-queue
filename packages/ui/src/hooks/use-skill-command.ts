@@ -1,8 +1,10 @@
+declare const __API_PORT__: string;
+
 const DEV_PORT = "3334";
 const PROD_PORT = "3333";
 
 function isDevMode(): boolean {
-  return window.location.port === DEV_PORT;
+  return __API_PORT__ === DEV_PORT;
 }
 
 export function useSkillCommand(): string {

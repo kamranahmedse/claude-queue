@@ -4,12 +4,35 @@ import { X, Trash2, Bot, User, Send, Pencil, Eye, History, ChevronDown, ImageIco
 import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask, listTasksOptions } from "~/queries/tasks";
 import { listAttachmentsOptions } from "~/queries/attachments";
 import { formatRelativeTime } from "~/hooks/use-relative-time";
+import { httpPost } from "~/lib/http";
 import { MarkdownRenderer } from "./markdown-renderer";
 import { ConfirmDialog } from "./confirm-dialog";
 import { ActivityTimeline } from "./activity-timeline";
 import { ImageUpload } from "./image-upload";
 import { EditTaskModal } from "./edit-task-modal";
-import type { Task, TaskStatus } from "~/types";
+import type { Task, TaskStatus, Attachment } from "~/types";
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadAttachment(taskId: string, file: File): Promise<Attachment> {
+  const data = await fileToBase64(file);
+  return httpPost<Attachment>(`/attachments/task/${taskId}`, {
+    filename: file.name,
+    data,
+    mimeType: file.type,
+  });
+}
 
 interface TaskDetailProps {
   task: Task;
@@ -77,7 +100,7 @@ export function TaskDetail(props: TaskDetailProps) {
     });
   };
 
-  const handleSaveEdit = (title: string, description: string) => {
+  const handleSaveEdit = async (title: string, description: string, images: File[]) => {
     updateTask.mutate(
       {
         taskId: currentTask.id,
@@ -85,7 +108,11 @@ export function TaskDetail(props: TaskDetailProps) {
         description: description || null,
       },
       {
-        onSuccess: (updatedTask) => {
+        onSuccess: async (updatedTask) => {
+          if (images.length > 0) {
+            await Promise.all(images.map((file) => uploadAttachment(currentTask.id, file)));
+            queryClient.invalidateQueries({ queryKey: listAttachmentsOptions(currentTask.id).queryKey });
+          }
           setCurrentTask(updatedTask);
           setShowEditModal(false);
           queryClient.invalidateQueries({ queryKey: listTasksOptions(currentTask.project_id).queryKey });

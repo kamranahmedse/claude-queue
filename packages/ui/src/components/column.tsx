@@ -346,11 +346,12 @@ export function Column(props: ColumnProps) {
           <div className="space-y-2">
             <div
               onDragOver={handleTopDropZoneDragOver}
-              className="h-1 -mb-1"
-            />
-            {dropIndex === 0 && isDragging && tasks.length > 0 && (!draggedTaskId || tasks[0].id !== draggedTaskId) && (
-              <div className="h-0.5 bg-blue-500 rounded-full" />
-            )}
+              className="h-1 -mb-1 relative"
+            >
+              {dropIndex === 0 && isDragging && tasks.length > 0 && (!draggedTaskId || tasks[0].id !== draggedTaskId) && (
+                <div className="absolute top-full left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
+              )}
+            </div>
             {tasks.map((task, index) => {
               const isBeingDragged = task.id === draggedTaskId;
               const isJustDropped = task.id === justDroppedTaskId;
@@ -379,19 +380,21 @@ export function Column(props: ColumnProps) {
                 </div>
               );
             })}
-            {dropIndex !== null && dropIndex >= tasks.length && isDragging && (
-              <div className="h-0.5 bg-blue-500 rounded-full" />
-            )}
-            {onAddTask && (
-              <button
-                onClick={onAddTask}
-                onDragOver={handleBottomDropZoneDragOver}
-                className="w-full mt-2 p-2 flex items-center justify-center gap-2 text-xs text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                <Plus className="w-3 h-3" />
-                Add task
-              </button>
-            )}
+            <div className="relative">
+              {dropIndex !== null && dropIndex >= tasks.length && isDragging && (
+                <div className="absolute -top-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
+              )}
+              {onAddTask && (
+                <button
+                  onClick={onAddTask}
+                  onDragOver={handleBottomDropZoneDragOver}
+                  className="w-full mt-2 p-2 flex items-center justify-center gap-2 text-xs text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add task
+                </button>
+              )}
+            </div>
           </div>
           <div
             onDragOver={handleBottomDropZoneDragOver}

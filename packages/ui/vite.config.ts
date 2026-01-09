@@ -7,6 +7,9 @@ const apiPort = process.env.PORT || "3333";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    __API_PORT__: JSON.stringify(apiPort),
+  },
   resolve: {
     alias: {
       "~": resolve(__dirname, "./src"),

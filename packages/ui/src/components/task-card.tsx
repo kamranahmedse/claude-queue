@@ -88,8 +88,7 @@ export function TaskCard(props: TaskCardProps) {
       <div
         onClick={onClick}
         className={`
-          p-3 rounded-lg border select-none
-          ${isLocked ? "cursor-default" : "cursor-grab active:cursor-grabbing"}
+          p-3 rounded-lg border select-none cursor-pointer
           ${isLocked && !task.blocked ? "in-progress-glow" : ""}
           ${
             task.blocked

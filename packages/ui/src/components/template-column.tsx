@@ -23,8 +23,8 @@ export function TemplateColumn(props: TemplateColumnProps) {
     onTemplateClick,
     onAddClick,
     onMoveTemplate,
-    onTemplateDropOnColumn,
-    isDragging,
+    onTemplateDropOnColumn: _onTemplateDropOnColumn,
+    isDragging: _isDragging,
     onDragStart,
     onDragEnd,
   } = props;
@@ -222,11 +222,12 @@ export function TemplateColumn(props: TemplateColumnProps) {
         <div className="space-y-2">
           <div
             onDragOver={handleTopDropZoneDragOver}
-            className="h-1 -mb-1"
-          />
-          {dropIndex === 0 && draggedTemplateId && templates.length > 0 && templates[0].id !== draggedTemplateId && (
-            <div className="h-0.5 bg-indigo-500 rounded-full" />
-          )}
+            className="h-1 -mb-1 relative"
+          >
+            {dropIndex === 0 && draggedTemplateId && templates.length > 0 && templates[0].id !== draggedTemplateId && (
+              <div className="absolute top-full left-0 right-0 h-0.5 bg-indigo-500 rounded-full z-10" />
+            )}
+          </div>
           {templates.map((template, index) => {
             const isBeingDragged = template.id === draggedTemplateId;
             const showIndicatorBefore = dropIndex === index && index > 0 && draggedTemplateId !== template.id;
@@ -254,17 +255,19 @@ export function TemplateColumn(props: TemplateColumnProps) {
               </div>
             );
           })}
-          {dropIndex !== null && dropIndex >= templates.length && draggedTemplateId && (
-            <div className="h-0.5 bg-indigo-500 rounded-full" />
-          )}
-          <button
-            onClick={onAddClick}
-            onDragOver={handleBottomDropZoneDragOver}
-            className="w-full mt-2 p-2 flex items-center justify-center gap-2 text-xs text-indigo-500 hover:text-indigo-400 hover:bg-indigo-900/20 rounded-lg transition-colors"
-          >
-            <Plus className="w-3 h-3" />
-            Add template
-          </button>
+          <div className="relative">
+            {dropIndex !== null && dropIndex >= templates.length && draggedTemplateId && (
+              <div className="absolute -top-1 left-0 right-0 h-0.5 bg-indigo-500 rounded-full z-10" />
+            )}
+            <button
+              onClick={onAddClick}
+              onDragOver={handleBottomDropZoneDragOver}
+              className="w-full mt-2 p-2 flex items-center justify-center gap-2 text-xs text-indigo-500 hover:text-indigo-400 hover:bg-indigo-900/20 rounded-lg transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              Add template
+            </button>
+          </div>
         </div>
         <div
           onDragOver={handleBottomDropZoneDragOver}

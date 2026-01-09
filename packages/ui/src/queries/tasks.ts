@@ -10,8 +10,8 @@ export function listTasksOptions(projectId: string) {
   });
 }
 
-export function useTasksRefetchInterval() {
-  return false;
+export function useTasksRefetchInterval(): number | false {
+  return 2000;
 }
 
 export function taskDetailsOptions(taskId: string) {
