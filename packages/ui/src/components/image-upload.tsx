@@ -134,7 +134,7 @@ export function ImageUpload(props: ImageUploadProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          border border-dashed rounded-lg p-3 text-center transition-colors cursor-pointer
+          border border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer
           ${isDragging
             ? "border-orange-500 bg-orange-500/10"
             : "border-zinc-700 hover:border-zinc-600"

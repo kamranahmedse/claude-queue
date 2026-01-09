@@ -426,24 +426,6 @@ function ActionsTab() {
     <>
       <div className="space-y-5">
         <section>
-          <h3 className="text-sm font-medium text-zinc-200 mb-3">Database Stats</h3>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="p-3 rounded-lg bg-zinc-800/50 text-center">
-              <div className="text-lg font-medium text-zinc-200">{stats.projects}</div>
-              <div className="text-xs text-zinc-500">Projects</div>
-            </div>
-            <div className="p-3 rounded-lg bg-zinc-800/50 text-center">
-              <div className="text-lg font-medium text-zinc-200">{stats.tasks.total}</div>
-              <div className="text-xs text-zinc-500">Tasks</div>
-            </div>
-            <div className="p-3 rounded-lg bg-zinc-800/50 text-center">
-              <div className="text-lg font-medium text-zinc-200">{stats.tasks.byStatus.done || 0}</div>
-              <div className="text-xs text-zinc-500">Done</div>
-            </div>
-          </div>
-        </section>
-
-        <section>
           <h3 className="text-sm font-medium text-zinc-200 mb-3">Cleanup Actions</h3>
           <div className="space-y-2">
             <ActionButton

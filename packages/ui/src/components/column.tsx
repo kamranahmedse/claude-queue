@@ -1,10 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useDroppable } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { Plus, Trash2, HelpCircle, ChevronLeft, ChevronRight, Inbox, CheckCircle2, Clock, CheckCheck } from "lucide-react";
+import { Plus, Trash2, HelpCircle, ChevronLeft, Inbox, CheckCircle2, Clock, CheckCheck } from "lucide-react";
+import { useDragContext } from "~/hooks/use-drag-and-drop";
+import { formatRelativeTime } from "~/hooks/use-relative-time";
+import type { Task, TaskStatus } from "~/types";
+import { TaskCard } from "./task-card";
+import { ConfirmDialog } from "./confirm-dialog";
 
 const COLUMN_ICONS: Record<TaskStatus, React.ReactNode> = {
   backlog: <Inbox className="w-4 h-4" />,
@@ -12,10 +12,6 @@ const COLUMN_ICONS: Record<TaskStatus, React.ReactNode> = {
   in_progress: <Clock className="w-4 h-4" />,
   done: <CheckCheck className="w-4 h-4" />,
 };
-import { formatRelativeTime } from "~/hooks/use-relative-time";
-import type { Task, TaskStatus } from "~/types";
-import { TaskCard } from "./task-card";
-import { ConfirmDialog } from "./confirm-dialog";
 
 const COLUMN_HELP: Record<TaskStatus, { title: string; description: string }> = {
   backlog: {
@@ -44,21 +40,29 @@ interface ColumnProps {
   onAddClick?: () => void;
   onDeleteAll?: () => void;
   isDeleting?: boolean;
-  showDropNotAllowed?: boolean;
+  onDrop?: (taskId: string, position: number) => void;
 }
 
 const COLLAPSED_KEY_PREFIX = "claude-kanban-column-collapsed-";
 
 export function Column(props: ColumnProps) {
-  const { id, title, tasks, onTaskClick, onAddClick, onDeleteAll, isDeleting, showDropNotAllowed } = props;
+  const { id, title, tasks, onTaskClick, onAddClick, onDeleteAll, isDeleting, onDrop } = props;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem(`${COLLAPSED_KEY_PREFIX}${id}`) === "true";
   });
+  const [isDropTargetEnd, setIsDropTargetEnd] = useState(false);
   const helpRef = useRef<HTMLDivElement>(null);
-  const { setNodeRef, isOver } = useDroppable({ id });
+  const columnRef = useRef<HTMLDivElement>(null);
+
+  const { dragItem, dropTarget, setDropTarget } = useDragContext();
+
+  const isDraggingTask = dragItem?.type === "task";
+  const isDraggingTemplate = dragItem?.type === "template";
+  const isInProgressColumn = id === "in_progress";
+  const showDropNotAllowed = isDraggingTask && isInProgressColumn && dragItem.task.status !== "in_progress";
 
   const handleToggleCollapse = () => {
     const newValue = !isCollapsed;
@@ -104,25 +108,91 @@ export function Column(props: ColumnProps) {
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+
+    if (isInProgressColumn && isDraggingTask && dragItem.task.status !== "in_progress") {
+      e.dataTransfer.dropEffect = "none";
+      return;
+    }
+
+    if (isDraggingTask) {
+      e.dataTransfer.dropEffect = "move";
+
+      const hasTaskDropTarget = dropTarget?.type === "task";
+      if (!hasTaskDropTarget) {
+        setIsDropTargetEnd(true);
+        setDropTarget({ type: "column", status: id });
+      } else {
+        setIsDropTargetEnd(false);
+      }
+    }
+
+    if (isDraggingTemplate && (id === "backlog" || id === "ready")) {
+      e.dataTransfer.dropEffect = "copy";
+      setDropTarget({ type: "column", status: id });
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (columnRef.current?.contains(e.relatedTarget as Node)) {
+      return;
+    }
+
+    setIsDropTargetEnd(false);
+    if (dropTarget?.type === "column" && dropTarget.status === id) {
+      setDropTarget(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDropTargetEnd(false);
+
+    if (!onDrop || !dragItem) {
+      return;
+    }
+
+    if (dragItem.type === "task" && !isInProgressColumn) {
+      let targetPosition = tasks.length;
+
+      if (dropTarget?.type === "task") {
+        const targetIndex = tasks.findIndex((t) => t.id === dropTarget.taskId);
+        if (targetIndex !== -1) {
+          targetPosition = dropTarget.position === "before" ? targetIndex : targetIndex + 1;
+        }
+      }
+
+      onDrop(dragItem.task.id, targetPosition);
+    }
+  };
+
+  const isOver = (isDraggingTask && !isInProgressColumn) ||
+    (isDraggingTemplate && (id === "backlog" || id === "ready"));
+
   if (isCollapsed) {
     return (
       <div
-        ref={setNodeRef}
+        ref={columnRef}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={`
-          w-10 flex flex-col items-center py-3 select-none
-          ${showDropNotAllowed ? "bg-red-900/20" : isOver ? "bg-zinc-900/30" : ""}
+          w-10 shrink-0 flex flex-col items-center py-3 select-none cursor-pointer h-full
+          hover:bg-zinc-800/50 transition-colors
+          ${showDropNotAllowed ? "bg-red-900/20" : isOver && dragItem ? "bg-zinc-900/30" : ""}
         `}
+        onClick={handleToggleCollapse}
+        title={`Expand ${title}`}
       >
-        <button
-          onClick={handleToggleCollapse}
-          className="p-2 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
-          title={`Expand ${title}`}
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-        <div className="flex-1 flex flex-col items-center justify-center gap-2">
+        <div className="flex flex-col items-center gap-2">
           <span className="text-zinc-500">{COLUMN_ICONS[id]}</span>
-          <span className="text-xs text-zinc-600 writing-mode-vertical">{tasks.length}</span>
+          <span className="text-xs text-zinc-500 font-medium writing-mode-vertical whitespace-nowrap">
+            {title}
+          </span>
+          <span className="text-xs text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded">
+            {tasks.length}
+          </span>
         </div>
       </div>
     );
@@ -178,26 +248,27 @@ export function Column(props: ColumnProps) {
           )}
         </div>
         <div
-          ref={setNodeRef}
+          ref={columnRef}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           className={`
             flex-1 px-1
-            ${showDropNotAllowed ? "bg-red-900/20 ring-2 ring-red-500/30 ring-inset rounded-lg" : isOver ? "bg-zinc-900/30" : ""}
+            ${showDropNotAllowed ? "bg-red-900/20 ring-2 ring-red-500/30 ring-inset rounded-lg" : ""}
           `}
         >
-          <SortableContext
-            items={tasks.map((t) => t.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-2">
-              {tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onClick={() => onTaskClick(task)}
-                />
-              ))}
-            </div>
-          </SortableContext>
+          <div className="space-y-2">
+            {tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onClick={() => onTaskClick(task)}
+              />
+            ))}
+          </div>
+          {isDropTargetEnd && !showDropNotAllowed && tasks.length > 0 && (
+            <div className="mt-2 h-0.5 bg-blue-500 rounded-full" />
+          )}
           {(id === "backlog" || id === "ready") && onAddClick && (
             <button
               onClick={onAddClick}

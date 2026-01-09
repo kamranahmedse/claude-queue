@@ -1,27 +1,13 @@
-import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
+import { useState, useMemo, forwardRef, useImperativeHandle, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  DndContext,
-  DragOverlay,
-  pointerWithin,
-  rectIntersection,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragOverEvent,
-  type CollisionDetection,
-} from "@dnd-kit/core";
 import { listTasksOptions, useCreateTask, useMoveTask, useDeleteAllTasks, useTasksRefetchInterval } from "~/queries/tasks";
 import { listTemplatesOptions, useCreateTemplate, useMoveTemplate, useUpdateTemplate } from "~/queries/templates";
 import { useTaskNotifications } from "~/hooks/use-task-notifications";
+import { DragProvider, useDragContext } from "~/hooks/use-drag-and-drop";
 import type { Task, TaskStatus, Template } from "~/types";
 import { COLUMNS } from "~/types";
 import { Column } from "./column";
 import { TemplateColumn } from "./template-column";
-import { TaskCard } from "./task-card";
-import { TemplateCard } from "./template-card";
 import { TaskDetail } from "./task-detail";
 import { AddTaskModal } from "./add-task-modal";
 import { AddTemplateModal } from "./add-template-modal";
@@ -37,99 +23,23 @@ export interface BoardRef {
   closeModals: () => void;
 }
 
-const COLUMN_IDS = new Set(["templates", "backlog", "ready", "in_progress", "done"]);
-
-const collisionDetection: CollisionDetection = (args) => {
-  const pointerCollisions = pointerWithin(args);
-
-  if (pointerCollisions.length > 0) {
-    const taskCollisions = pointerCollisions.filter(
-      (collision) => !COLUMN_IDS.has(collision.id as string)
-    );
-    if (taskCollisions.length > 0) {
-      return taskCollisions;
-    }
-    return pointerCollisions;
-  }
-
-  return rectIntersection(args);
-};
-
-function reorderTasks(tasks: Task[], taskId: string, targetStatus: TaskStatus, targetPosition: number): Task[] {
-  const task = tasks.find((t) => t.id === taskId);
-  if (!task) {
-    return tasks;
-  }
-
-  const oldStatus = task.status;
-  const oldPosition = task.position;
-
-  return tasks.map((t) => {
-    if (t.id === taskId) {
-      return { ...t, status: targetStatus, position: targetPosition };
-    }
-
-    if (t.status === oldStatus && t.id !== taskId) {
-      if (t.position > oldPosition) {
-        return { ...t, position: t.position - 1 };
-      }
-    }
-
-    if (t.status === targetStatus && t.id !== taskId) {
-      if (t.position >= targetPosition) {
-        return { ...t, position: t.position + 1 };
-      }
-    }
-
-    return t;
-  });
+interface BoardContentProps {
+  projectId: string;
+  boardRef: React.Ref<BoardRef>;
 }
 
-function reorderTemplates(templates: Template[], templateId: string, targetPosition: number): Template[] {
-  const template = templates.find((t) => t.id === templateId);
-  if (!template) {
-    return templates;
-  }
+function BoardContent(props: BoardContentProps) {
+  const { projectId, boardRef } = props;
 
-  const oldPosition = template.position;
-
-  return templates.map((t) => {
-    if (t.id === templateId) {
-      return { ...t, position: targetPosition };
-    }
-
-    if (targetPosition > oldPosition) {
-      if (t.position > oldPosition && t.position <= targetPosition) {
-        return { ...t, position: t.position - 1 };
-      }
-    } else if (targetPosition < oldPosition) {
-      if (t.position >= targetPosition && t.position < oldPosition) {
-        return { ...t, position: t.position + 1 };
-      }
-    }
-
-    return t;
-  });
-}
-
-export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref) {
-  const { projectId } = props;
-
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [activeTemplate, setActiveTemplate] = useState<Template | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [addTaskStatus, setAddTaskStatus] = useState<TaskStatus | null>(null);
   const [addTaskFromTemplate, setAddTaskFromTemplate] = useState<Template | null>(null);
   const [showAddTemplate, setShowAddTemplate] = useState(false);
-  const [optimisticTasks, setOptimisticTasks] = useState<Task[] | null>(null);
-  const [optimisticTemplates, setOptimisticTemplates] = useState<Template[] | null>(null);
-  const [overInfo, setOverInfo] = useState<{ status: TaskStatus; position: number } | null>(null);
-  const [templateOverInfo, setTemplateOverInfo] = useState<{ position: number } | null>(null);
-  const [templateDropTarget, setTemplateDropTarget] = useState<TaskStatus | null>(null);
-  const [isDraggingOverInProgress, setIsDraggingOverInProgress] = useState(false);
 
-  useImperativeHandle(ref, () => ({
+  const { dragItem, setDragItem } = useDragContext();
+
+  useImperativeHandle(boardRef, () => ({
     openAddTask: () => setAddTaskStatus("ready"),
     openAddTemplate: () => setShowAddTemplate(true),
     closeModals: () => {
@@ -142,11 +52,11 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
   }));
 
   const refetchInterval = useTasksRefetchInterval();
-  const { data: serverTasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery({
     ...listTasksOptions(projectId),
     refetchInterval,
   });
-  const { data: serverTemplates = [], isLoading: isLoadingTemplates } = useQuery({
+  const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
     ...listTemplatesOptions(projectId),
     refetchInterval: 5000,
   });
@@ -157,18 +67,7 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
   const updateTemplate = useUpdateTemplate();
   const moveTemplate = useMoveTemplate();
 
-  const tasks = optimisticTasks ?? serverTasks;
-  const templates = optimisticTemplates ?? serverTemplates;
-
-  useTaskNotifications(serverTasks as Task[]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  useTaskNotifications(tasks as Task[]);
 
   const tasksByStatus = useMemo(() => {
     const grouped: Record<TaskStatus, Task[]> = {
@@ -189,217 +88,69 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
     return grouped;
   }, [tasks]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const task = tasks.find((t) => t.id === event.active.id);
-    if (task) {
-      setActiveTask(task);
-      return;
-    }
-
-    const template = templates.find((t) => t.id === event.active.id);
-    if (template) {
-      setActiveTemplate(template);
-    }
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const draggedTemplate = serverTemplates.find((t) => t.id === active.id);
-    if (draggedTemplate) {
-      const overTemplate = serverTemplates.find((t) => t.id === over.id);
-      if (overTemplate) {
-        const overIndex = serverTemplates.findIndex((t) => t.id === over.id);
-
-        // Only update if position actually changed
-        if (templateOverInfo?.position === overIndex) {
-          return;
-        }
-
-        setTemplateOverInfo({ position: overIndex });
-        setTemplateDropTarget(null);
-
-        if (draggedTemplate.position !== overIndex) {
-          const newTemplates = reorderTemplates(serverTemplates, draggedTemplate.id, overIndex);
-          setOptimisticTemplates(newTemplates);
-        }
-      } else {
-        const targetStatus = over.id as string;
-        if (targetStatus === "backlog" || targetStatus === "ready") {
-          setTemplateDropTarget(targetStatus);
-          setTemplateOverInfo(null);
-          setOptimisticTemplates(null);
-        } else {
-          setTemplateDropTarget(null);
-          setTemplateOverInfo(null);
-          setOptimisticTemplates(null);
-        }
-      }
-      return;
-    }
-
-    const draggedTask = serverTasks.find((t) => t.id === active.id);
-    if (!draggedTask) {
-      return;
-    }
-
-    let targetStatus: TaskStatus;
-    let targetPosition: number;
-
-    const overTask = serverTasks.find((t) => t.id === over.id);
-    if (overTask) {
-      targetStatus = overTask.status;
-      // Use server state consistently for position calculation
-      const serverStatusTasks = serverTasks
-        .filter((t) => t.status === targetStatus)
-        .sort((a, b) => a.position - b.position);
-      const overIndex = serverStatusTasks.findIndex((t) => t.id === over.id);
-      targetPosition = overIndex;
-    } else {
-      targetStatus = over.id as TaskStatus;
-      const serverStatusTasks = serverTasks.filter((t) => t.status === targetStatus);
-      targetPosition = serverStatusTasks.length;
-    }
-
-    if (targetStatus === "in_progress") {
-      setIsDraggingOverInProgress(true);
-      setOverInfo(null);
-      setOptimisticTasks(null);
-      return;
-    }
-
-    setIsDraggingOverInProgress(false);
-
-    // Only update if position actually changed
-    if (overInfo?.status === targetStatus && overInfo?.position === targetPosition) {
-      return;
-    }
-
-    setOverInfo({ status: targetStatus, position: targetPosition });
-
-    // Only update optimistic state if position changed from dragged task's original position
-    if (draggedTask.status !== targetStatus || draggedTask.position !== targetPosition) {
-      const newTasks = reorderTasks(serverTasks, draggedTask.id, targetStatus, targetPosition);
-      setOptimisticTasks(newTasks);
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active } = event;
-
-    const draggedTemplate = serverTemplates.find((t) => t.id === active.id);
-    if (draggedTemplate) {
-      if (templateDropTarget) {
-        setActiveTemplate(null);
-        setTemplateOverInfo(null);
-        setOptimisticTemplates(null);
-        setAddTaskStatus(templateDropTarget);
-        setAddTaskFromTemplate(draggedTemplate);
-        setTemplateDropTarget(null);
+  const handleTaskDrop = useCallback(
+    (columnId: TaskStatus, taskId: string, position: number) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) {
         return;
       }
 
-      if (!templateOverInfo) {
-        setActiveTemplate(null);
-        setOptimisticTemplates(null);
-        setTemplateDropTarget(null);
+      if (columnId === "in_progress") {
         return;
       }
 
-      const { position: targetPosition } = templateOverInfo;
-
-      if (draggedTemplate.position === targetPosition) {
-        setActiveTemplate(null);
-        setTemplateOverInfo(null);
-        setOptimisticTemplates(null);
-        setTemplateDropTarget(null);
+      if (task.status === columnId && task.position === position) {
         return;
       }
 
-      setActiveTemplate(null);
-      setTemplateOverInfo(null);
-      setTemplateDropTarget(null);
+      moveTask.mutate({
+        taskId,
+        status: columnId,
+        position,
+      });
 
-      moveTemplate.mutate(
-        {
-          templateId: draggedTemplate.id,
-          position: targetPosition,
-        },
-        {
-          onSettled: () => {
-            setOptimisticTemplates(null);
-          },
-        }
-      );
-      return;
-    }
+      setDragItem(null);
+    },
+    [tasks, moveTask, setDragItem]
+  );
 
-    if (!overInfo) {
-      setActiveTask(null);
-      setOptimisticTasks(null);
-      setIsDraggingOverInProgress(false);
-      return;
-    }
-
-    const draggedTask = serverTasks.find((t) => t.id === active.id);
-    if (!draggedTask) {
-      setActiveTask(null);
-      setOverInfo(null);
-      setOptimisticTasks(null);
-      setIsDraggingOverInProgress(false);
-      return;
-    }
-
-    const { status: targetStatus, position: targetPosition } = overInfo;
-
-    if (targetStatus === "in_progress") {
-      setActiveTask(null);
-      setOverInfo(null);
-      setOptimisticTasks(null);
-      setIsDraggingOverInProgress(false);
-      return;
-    }
-
-    if (draggedTask.status === targetStatus && draggedTask.position === targetPosition) {
-      setActiveTask(null);
-      setOverInfo(null);
-      setOptimisticTasks(null);
-      setIsDraggingOverInProgress(false);
-      return;
-    }
-
-    setActiveTask(null);
-    setOverInfo(null);
-    setIsDraggingOverInProgress(false);
-
-    moveTask.mutate(
-      {
-        taskId: draggedTask.id,
-        status: targetStatus,
-        position: targetPosition,
-      },
-      {
-        onSettled: () => {
-          setOptimisticTasks(null);
-        },
+  const handleTemplateDrop = useCallback(
+    (columnId: TaskStatus) => {
+      if (dragItem?.type !== "template") {
+        return;
       }
-    );
-  };
 
-  const handleDragCancel = () => {
-    setActiveTask(null);
-    setActiveTemplate(null);
-    setOverInfo(null);
-    setTemplateOverInfo(null);
-    setTemplateDropTarget(null);
-    setIsDraggingOverInProgress(false);
-    setOptimisticTasks(null);
-    setOptimisticTemplates(null);
-  };
+      if (columnId !== "backlog" && columnId !== "ready") {
+        return;
+      }
+
+      setAddTaskStatus(columnId);
+      setAddTaskFromTemplate(dragItem.template);
+      setDragItem(null);
+    },
+    [dragItem, setDragItem]
+  );
+
+  const handleTemplateReorder = useCallback(
+    (templateId: string, newPosition: number) => {
+      const template = templates.find((t) => t.id === templateId);
+      if (!template) {
+        return;
+      }
+
+      if (template.position === newPosition) {
+        return;
+      }
+
+      moveTemplate.mutate({
+        templateId,
+        position: newPosition,
+      });
+
+      setDragItem(null);
+    },
+    [templates, moveTemplate, setDragItem]
+  );
 
   const handleAddTask = (title: string, description: string) => {
     if (!addTaskStatus) {
@@ -451,59 +202,49 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
           <div className="text-sm text-zinc-500">Loading...</div>
         </div>
       )}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={collisionDetection}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-      >
-        <div className="flex-1 pt-0 pb-4 px-4 overflow-auto">
-          <div className="grid grid-cols-[auto_repeat(4,minmax(280px,320px))] gap-0 items-stretch min-h-full w-max">
-            <div className="border-r border-zinc-800 pr-3 mr-3 flex flex-col">
-              <TemplateColumn
-                templates={templates}
-                onTemplateClick={setEditingTemplate}
-                onAddClick={() => setShowAddTemplate(true)}
+      <div className="flex-1 pt-0 pb-4 px-4 overflow-auto">
+        <div className="flex gap-0 items-stretch min-h-full w-max">
+          <div className="border-r border-zinc-800 pr-3 mr-3 flex flex-col">
+            <TemplateColumn
+              templates={templates}
+              onTemplateClick={setEditingTemplate}
+              onAddClick={() => setShowAddTemplate(true)}
+              onReorder={handleTemplateReorder}
+            />
+          </div>
+          {COLUMNS.map((column, index) => (
+            <div
+              key={column.id}
+              className={`flex flex-col ${index < COLUMNS.length - 1 ? "border-r border-zinc-800 pr-3 mr-3" : ""}`}
+            >
+              <Column
+                id={column.id}
+                title={column.title}
+                tasks={tasksByStatus[column.id]}
+                onTaskClick={setSelectedTask}
+                onAddClick={
+                  column.id === "backlog" || column.id === "ready"
+                    ? () => setAddTaskStatus(column.id)
+                    : undefined
+                }
+                onDeleteAll={
+                  column.id !== "in_progress"
+                    ? () => deleteAllTasks.mutate(column.id)
+                    : undefined
+                }
+                isDeleting={deleteAllTasks.isPending}
+                onDrop={(taskId, position) => {
+                  if (dragItem?.type === "task") {
+                    handleTaskDrop(column.id, taskId, position);
+                  } else if (dragItem?.type === "template") {
+                    handleTemplateDrop(column.id);
+                  }
+                }}
               />
             </div>
-            {COLUMNS.map((column, index) => (
-              <div
-                key={column.id}
-                className={`flex flex-col ${index < COLUMNS.length - 1 ? "border-r border-zinc-800 pr-3 mr-3" : ""}`}
-              >
-                <Column
-                  id={column.id}
-                  title={column.title}
-                  tasks={tasksByStatus[column.id]}
-                  onTaskClick={setSelectedTask}
-                  onAddClick={
-                    column.id === "backlog" || column.id === "ready"
-                      ? () => setAddTaskStatus(column.id)
-                      : undefined
-                  }
-                  onDeleteAll={
-                    column.id !== "in_progress"
-                      ? () => deleteAllTasks.mutate(column.id)
-                      : undefined
-                  }
-                  isDeleting={deleteAllTasks.isPending}
-                  showDropNotAllowed={isDraggingOverInProgress && column.id === "in_progress"}
-                />
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
-        <DragOverlay dropAnimation={null}>
-          {activeTask && (
-            <TaskCard task={activeTask} onClick={() => {}} />
-          )}
-          {activeTemplate && (
-            <TemplateCard template={activeTemplate} onClick={() => {}} />
-          )}
-        </DragOverlay>
-      </DndContext>
+      </div>
 
       {selectedTask && (
         <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
@@ -536,5 +277,15 @@ export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref)
         />
       )}
     </div>
+  );
+}
+
+export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref) {
+  const { projectId } = props;
+
+  return (
+    <DragProvider>
+      <BoardContent projectId={projectId} boardRef={ref} />
+    </DragProvider>
   );
 });
