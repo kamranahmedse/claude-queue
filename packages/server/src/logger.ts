@@ -2,7 +2,7 @@ import { createWriteStream, mkdirSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
-const KANBAN_DIR = join(homedir(), ".claude-kanban");
+const KANBAN_DIR = join(homedir(), ".claude-board");
 const LOG_FILE = join(KANBAN_DIR, "server.log");
 
 let logStream: ReturnType<typeof createWriteStream> | null = null;

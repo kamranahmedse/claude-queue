@@ -108,7 +108,7 @@ import(mcpPath);
 }
 
 function main(): void {
-  console.log("🚀 Building claude-kanban package...\n");
+  console.log("🚀 Building claude-board package...\n");
 
   clean();
   buildUI();

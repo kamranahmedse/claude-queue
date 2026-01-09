@@ -1,12 +1,12 @@
 {
-  "name": "claude-kanban",
+  "name": "claude-board",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "PORT=3334 concurrently -n server,ui -c blue,green \"pnpm dev:server\" \"pnpm dev:ui\"",
-    "dev:server": "PORT=3334 pnpm --filter @claude-kanban/server dev",
-    "dev:ui": "PORT=3334 pnpm --filter @claude-kanban/ui dev",
+    "dev:server": "PORT=3334 pnpm --filter @claude-board/server dev",
+    "dev:ui": "PORT=3334 pnpm --filter @claude-board/ui dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "start": "node packages/server/dist/index.js"

@@ -20,10 +20,10 @@ export async function configureMcp(): Promise<void> {
 
   const mcpServers = (settings.mcpServers as Record<string, unknown>) || {};
 
-  if (!mcpServers["claude-kanban"]) {
-    mcpServers["claude-kanban"] = {
+  if (!mcpServers["claude-board"]) {
+    mcpServers["claude-board"] = {
       command: "npx",
-      args: ["-y", "-p", "claude-kanban", "claude-kanban-mcp"],
+      args: ["-y", "-p", "claude-board", "claude-board-mcp"],
       env: {
         KANBAN_SERVER_URL: `http://localhost:${DEFAULT_PORT}`,
       },
@@ -87,11 +87,11 @@ export function removeMcp(): boolean {
 
   const mcpServers = (settings.mcpServers as Record<string, unknown>) || {};
 
-  if (!mcpServers["claude-kanban"]) {
+  if (!mcpServers["claude-board"]) {
     return false;
   }
 
-  delete mcpServers["claude-kanban"];
+  delete mcpServers["claude-board"];
   settings.mcpServers = mcpServers;
   writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   return true;

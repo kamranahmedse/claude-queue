@@ -14,7 +14,7 @@ const DEFAULT_TEMPLATES = [
   { key: "documentation", title: "Documentation", description: "Add or update documentation, comments, or README files." },
 ];
 
-function seedDefaultTemplates(projectId: string): void {
+export function seedDefaultTemplates(projectId: string): void {
   const db = getDb();
 
   const seededKeys = db

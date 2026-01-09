@@ -29,7 +29,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
     try {
       const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
       const mcpServers = settings.mcpServers || {};
-      mcpConfigured = !!mcpServers["claude-kanban"];
+      mcpConfigured = !!mcpServers["claude-board"];
       if (mcpConfigured) {
         console.log("✅ MCP server configured in settings.json");
       } else {
@@ -66,7 +66,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
   }
 
   if (existsSync(KANBAN_DIR)) {
-    console.log("✅ Kanban data directory exists (~/.claude-kanban)");
+    console.log("✅ Kanban data directory exists (~/.claude-board)");
   } else {
     console.log("⚠️  Kanban data directory not created yet");
     warnings++;
@@ -124,14 +124,14 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
     console.log(`❌ ${issues} issue(s) found, ${warnings} warning(s).\n`);
     if (!fix) {
       console.log("Run with --fix to attempt automatic fixes:");
-      console.log("  npx claude-kanban doctor --fix\n");
+      console.log("  npx claude-board doctor --fix\n");
     }
   }
 
   console.log("Quick reference:");
-  console.log("  Start server:     npx claude-kanban");
+  console.log("  Start server:     npx claude-board");
   console.log("  View board:       http://localhost:" + port);
   console.log("  Run skill:        /kanban <project-id>");
-  console.log("  View logs:        npx claude-kanban logs -f");
+  console.log("  View logs:        npx claude-board logs -f");
   console.log("");
 }

@@ -174,9 +174,9 @@ function SkillsTab(props: SkillsTabProps) {
         </p>
         <div className="flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700">
           <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2.5">
-            npx claude-kanban
+            npx claude-board
           </code>
-          <CopyButton text="npx claude-kanban" className="mr-2" />
+          <CopyButton text="npx claude-board" className="mr-2" />
         </div>
         <p className="text-xs text-zinc-500 mt-2">
           This will reinstall the skill if it's missing.
@@ -230,7 +230,7 @@ function McpTab(props: McpTabProps) {
         <pre className="p-3 rounded-lg bg-zinc-800 text-xs font-mono text-zinc-300 overflow-x-auto">
 {`"${mcpName}": {
   "command": "npx",
-  "args": ["-y", "-p", "claude-kanban", "claude-kanban-mcp"],
+  "args": ["-y", "-p", "claude-board", "claude-board-mcp"],
   "env": {
     "KANBAN_SERVER_URL": "http://localhost:${port}"
   }
@@ -245,9 +245,9 @@ function McpTab(props: McpTabProps) {
         </p>
         <div className="flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700">
           <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2.5">
-            npx claude-kanban
+            npx claude-board
           </code>
-          <CopyButton text="npx claude-kanban" className="mr-2" />
+          <CopyButton text="npx claude-board" className="mr-2" />
         </div>
         <p className="text-xs text-zinc-500 mt-2">
           Then restart Claude Code to load the new MCP server.
@@ -525,7 +525,7 @@ function IssuesTab(props: IssuesTabProps) {
     {
       problem: '"Skill not found" error',
       solutions: [
-        "Run `npx claude-kanban` to reinstall skills",
+        "Run `npx claude-board` to reinstall skills",
         "Check ~/.claude/skills/ directory exists",
         "Restart Claude Code after installing",
       ],

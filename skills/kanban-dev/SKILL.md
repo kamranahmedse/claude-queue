@@ -10,7 +10,7 @@ Watch the kanban board on the DEVELOPMENT server (port 3334) and work through ta
 ## Setup
 
 1. Call `kanban_watch` with the project ID to connect to the board
-2. The project ID is in the format `kbn-xxxx` (check the URL or run `claude-kanban list`)
+2. The project ID is in the format `kbn-xxxx` (check the URL or run `claude-board list`)
 
 ## Main Loop
 
@@ -85,5 +85,5 @@ User can trigger actions via the UI that leave special comments. When checking c
 
 ## Note
 
-This uses the DEV MCP server (claude-kanban-dev) on port 3334.
+This uses the DEV MCP server (claude-board-dev) on port 3334.
 Make sure `make dev` is running.

@@ -4,7 +4,7 @@ import { homedir } from "os";
 import { join } from "path";
 import { initSchema } from "./schema.js";
 
-const DATA_DIR = join(homedir(), ".claude-kanban");
+const DATA_DIR = join(homedir(), ".claude-board");
 const DB_PATH = join(DATA_DIR, "kanban.db");
 
 let db: Database.Database | null = null;

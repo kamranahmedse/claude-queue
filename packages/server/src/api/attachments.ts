@@ -8,7 +8,7 @@ import { rowToAttachment, type AttachmentRow } from "../utils/mappers.js";
 
 const router: RouterType = Router();
 
-const DATA_DIR = join(homedir(), ".claude-kanban");
+const DATA_DIR = join(homedir(), ".claude-board");
 const ATTACHMENTS_DIR = join(DATA_DIR, "attachments");
 
 function ensureAttachmentsDir() {

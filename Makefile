@@ -23,6 +23,12 @@ setup: install build install-skills install-mcp ## Full development setup
 	@echo "\n✓ Setup complete! Run 'make dev' to start dev server"
 
 dev: ## Start dev server + UI with hot reload
+	@echo ""
+	@echo "  ┌─────────────────────────────────────────────────────┐"
+	@echo "  │  Open http://localhost:5173 in your browser         │"
+	@echo "  │  (Port 3334 is the API server - don't use directly) │"
+	@echo "  └─────────────────────────────────────────────────────┘"
+	@echo ""
 	PORT=$(DEV_PORT) pnpm dev
 
 clean: ## Clean build artifacts and node_modules
@@ -43,7 +49,7 @@ install-mcp:
 		const fs = require("fs"); \
 		const settings = JSON.parse(fs.readFileSync("$(CLAUDE_SETTINGS)", "utf-8")); \
 		settings.mcpServers = settings.mcpServers || {}; \
-		settings.mcpServers["claude-kanban-dev"] = { \
+		settings.mcpServers["claude-board-dev"] = { \
 			type: "stdio", \
 			command: "node", \
 			args: ["$(PWD)/packages/mcp/dist/index.js"], \
@@ -51,7 +57,7 @@ install-mcp:
 		}; \
 		fs.writeFileSync("$(CLAUDE_SETTINGS)", JSON.stringify(settings, null, 2)); \
 	'
-	@echo "✓ MCP 'claude-kanban-dev' configured (port $(DEV_PORT))"
+	@echo "✓ MCP 'claude-board-dev' configured (port $(DEV_PORT))"
 
 # ============ Publishing ============
 
@@ -62,4 +68,4 @@ build-package: ## Build npm package for publishing
 publish: build-package ## Publish to npm (requires npm login)
 	@echo "\nPublishing to npm..."
 	cd packages/cli && npm publish
-	@echo "\n✓ Published claude-kanban to npm!"
+	@echo "\n✓ Published claude-board to npm!"

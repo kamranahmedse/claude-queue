@@ -40,13 +40,14 @@ interface ColumnProps {
   onAddClick?: () => void;
   onDeleteAll?: () => void;
   isDeleting?: boolean;
+  showBorder?: boolean;
   onDrop?: (taskId: string, position: number) => void;
 }
 
-const COLLAPSED_KEY_PREFIX = "claude-kanban-column-collapsed-";
+const COLLAPSED_KEY_PREFIX = "claude-board-column-collapsed-";
 
 export function Column(props: ColumnProps) {
-  const { id, title, tasks, onTaskClick, onAddClick, onDeleteAll, isDeleting, onDrop } = props;
+  const { id, title, tasks, onTaskClick, onAddClick, onDeleteAll, isDeleting, showBorder, onDrop } = props;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -178,29 +179,28 @@ export function Column(props: ColumnProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          w-10 shrink-0 flex flex-col items-center py-3 select-none cursor-pointer h-full
+          w-10 shrink-0 flex flex-col items-center py-3 select-none cursor-pointer
           hover:bg-zinc-800/50 transition-colors
+          ${showBorder ? "border-r border-zinc-800" : ""}
           ${showDropNotAllowed ? "bg-red-900/20" : isOver && dragItem ? "bg-zinc-900/30" : ""}
         `}
         onClick={handleToggleCollapse}
         title={`Expand ${title}`}
       >
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-zinc-500">{COLUMN_ICONS[id]}</span>
-          <span className="text-xs text-zinc-500 font-medium writing-mode-vertical whitespace-nowrap">
-            {title}
-          </span>
-          <span className="text-xs text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded">
-            {tasks.length}
-          </span>
-        </div>
+        <span className="text-zinc-500">{COLUMN_ICONS[id]}</span>
+        <span className="text-xs text-zinc-500 font-medium writing-mode-vertical whitespace-nowrap mt-2">
+          {title}
+        </span>
+        <span className="text-xs text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded mt-2">
+          {tasks.length}
+        </span>
       </div>
     );
   }
 
   return (
     <>
-      <div className="flex-1 min-w-[280px] max-w-[320px] select-none flex flex-col">
+      <div className={`flex-1 min-w-[280px] max-w-[320px] select-none flex flex-col ml-3 ${showBorder ? "border-r border-zinc-800 pr-3 mr-3" : ""}`}>
         <div className={`sticky top-0 bg-zinc-950 py-3 px-1 ${showHelp ? "z-20" : "z-10"}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -215,9 +215,9 @@ export function Column(props: ColumnProps) {
               <div className="relative" ref={helpRef}>
                 <button
                   onClick={() => setShowHelp(!showHelp)}
-                  className="p-0.5 text-zinc-600 hover:text-zinc-400 rounded transition-colors"
+                  className="p-1 text-zinc-600 hover:text-zinc-400 rounded transition-colors"
                 >
-                  <HelpCircle className="w-3.5 h-3.5" />
+                  <HelpCircle className="w-3 h-3" />
                 </button>
                 {showHelp && (
                   <div className="absolute left-0 top-full mt-1 w-64 p-3 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50">

@@ -10,7 +10,7 @@ Watch the kanban board and work through tasks autonomously.
 ## Setup
 
 1. Call `kanban_watch` with the project ID to connect to the board
-2. The project ID is in the format `kbn-xxxx` (check the URL or run `claude-kanban list`)
+2. The project ID is in the format `kbn-xxxx` (check the URL or run `claude-board list`)
 
 ## Main Loop
 
@@ -85,5 +85,5 @@ User can trigger actions via the UI that leave special comments. When checking c
 
 ## Note
 
-This uses the production MCP server (claude-kanban) on port 3333.
-Make sure the kanban server is running (`npx claude-kanban` or `make start`).
+This uses the production MCP server (claude-board) on port 3333.
+Make sure the kanban server is running (`npx claude-board` or `make start`).

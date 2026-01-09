@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { HelpCircle, Wrench, Volume2, VolumeX, BarChart3, Settings } from "lucide-react";
+import { HelpCircle, Wrench, BarChart3, Settings } from "lucide-react";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
-import { useSoundEnabled } from "~/hooks/use-sound";
 import { useSkillCommand } from "~/hooks/use-skill-command";
 import { ClaudeStatus } from "./claude-status";
 import { CopyButton } from "./copy-button";
@@ -27,13 +26,12 @@ export function Header(props: HeaderProps) {
     refetchInterval,
   });
 
-  const [soundEnabled, setSoundEnabled] = useSoundEnabled();
   const skillCommand = useSkillCommand();
 
   return (
     <header className="sticky top-0 z-20 h-14 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
-        <h1 className="text-sm font-medium text-zinc-300">claude-kanban</h1>
+        <h1 className="text-sm font-medium text-zinc-300">claude-board</h1>
         {projects.length > 0 && (
           <select
             value={project?.id || ""}
@@ -67,13 +65,6 @@ export function Header(props: HeaderProps) {
             <BarChart3 className="w-4 h-4" />
           </button>
         )}
-        <button
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
-          title={soundEnabled ? "Disable sound notifications" : "Enable sound notifications"}
-        >
-          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-        </button>
         <button
           onClick={onSettingsClick}
           className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"

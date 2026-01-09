@@ -9,7 +9,7 @@ import { handleSetBlocked, handleWaitForReply } from "./handlers/blocking.ts";
 import { handleCheckComments, handleAddComment } from "./handlers/comments.ts";
 
 const server = new McpServer({
-  name: "claude-kanban",
+  name: "claude-board",
   version: "1.0.0",
 });
 

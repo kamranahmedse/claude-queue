@@ -10,7 +10,7 @@ export function useSkillCommand(): string {
 }
 
 export function useMcpName(): string {
-  return isDevMode() ? "claude-kanban-dev" : "claude-kanban";
+  return isDevMode() ? "claude-board-dev" : "claude-board";
 }
 
 export function usePort(): string {

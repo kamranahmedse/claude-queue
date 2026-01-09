@@ -14,10 +14,26 @@ import attachmentsRouter from "./api/attachments.js";
 import promptsRouter from "./api/prompts.js";
 import healthRouter from "./api/health.js";
 import maintenanceRouter from "./api/maintenance.js";
-import { closeDb } from "./db/index.js";
+import { closeDb, getDb } from "./db/index.js";
 import { log, logRequest } from "./logger.js";
+import { seedDefaultTemplates } from "./api/projects.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function ensureDevProject(): void {
+  const db = getDb();
+  const projects = db.prepare("SELECT * FROM projects").all();
+
+  if (projects.length === 0) {
+    const cwd = process.cwd();
+    const name = cwd.split("/").pop() || "dev";
+    const id = "kbn-dev";
+
+    db.prepare("INSERT INTO projects (id, path, name) VALUES (?, ?, ?)").run(id, cwd, name);
+    seedDefaultTemplates(id);
+    log(`Auto-created dev project: ${id} (${name})`);
+  }
+}
 
 export function createServer(port = 3333): { app: Express; server: Server } {
   const app = express();
@@ -74,6 +90,10 @@ export function createServer(port = 3333): { app: Express; server: Server } {
 
   const server = app.listen(port, () => {
     log(`Server running on http://localhost:${port}`);
+
+    if (isDev) {
+      ensureDevProject();
+    }
   });
 
   const shutdown = () => {

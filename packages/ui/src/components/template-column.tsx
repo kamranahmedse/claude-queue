@@ -4,7 +4,7 @@ import { useDragContext } from "~/hooks/use-drag-and-drop";
 import type { Template } from "~/types";
 import { TemplateCard } from "./template-card";
 
-const COLLAPSED_KEY = "claude-kanban-templates-collapsed";
+const COLLAPSED_KEY = "claude-board-templates-collapsed";
 
 interface TemplateColumnProps {
   templates: Template[];

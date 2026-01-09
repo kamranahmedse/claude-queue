@@ -1,13 +1,12 @@
-# claude-kanban
+# claude-board
 
 A local kanban board for managing Claude Code projects. Add tasks to the board, and Claude will pick them up, work through them autonomously, ask questions when blocked, and mark them complete.
 
 ## Quick Start
 
-Navigate to your project directory and run:
-
 ```bash
-npx claude-kanban
+cd /path/to/your/project
+npx claude-board
 ```
 
 This starts the kanban server and opens your board at `http://localhost:3333` with the empty project board.
@@ -41,37 +40,37 @@ Claude will start watching your board and work through tasks in the Ready column
 ## CLI Commands
 
 ```bash
-claude-kanban              # Start server (foreground)
-claude-kanban --detach     # Start server (background)
-claude-kanban status       # Check if server is running
-claude-kanban stop         # Stop background server
-claude-kanban list         # List all projects
-claude-kanban doctor       # Diagnose and fix issues
-claude-kanban uninstall    # Remove MCP and skill config
-claude-kanban uninstall --all  # Also remove all data
+claude-board              # Start server (foreground)
+claude-board --detach     # Start server (background)
+claude-board status       # Check if server is running
+claude-board stop         # Stop background server
+claude-board list         # List all projects
+claude-board doctor       # Diagnose and fix issues
+claude-board uninstall    # Remove MCP and skill config
+claude-board uninstall --all  # Also remove all data
 ```
 
 ## Upgrading
 
 The MCP server uses `npx -y` which automatically fetches the latest version. To upgrade:
 
-1. Stop the running server: `claude-kanban stop`
+1. Stop the running server: `claude-board stop`
 2. Clear npm cache (optional): `npm cache clean --force`
-3. Start again: `npx claude-kanban`
+3. Start again: `npx claude-board`
 
 The skill file at `~/.claude/skills/kanban/` is only written once. To update it, delete the folder and restart:
 
 ```bash
 rm -rf ~/.claude/skills/kanban
-npx claude-kanban
+npx claude-board
 ```
 
 ## Uninstalling
 
-To remove claude-kanban from Claude Code:
+To remove claude-board from Claude Code:
 
 ```bash
-npx claude-kanban uninstall
+npx claude-board uninstall
 ```
 
 This removes the MCP server config from `~/.claude/settings.json` and the `/kanban` skill. Restart Claude Code after uninstalling.
@@ -79,7 +78,7 @@ This removes the MCP server config from `~/.claude/settings.json` and the `/kanb
 To also remove all data (database, logs):
 
 ```bash
-npx claude-kanban uninstall --all
+npx claude-board uninstall --all
 ```
 
 ## Status Indicators
@@ -104,14 +103,14 @@ npx claude-kanban uninstall --all
 ## Data Storage
 
 All data is stored locally:
-- Database: `~/.claude-kanban/kanban.db`
-- Logs: `~/.claude-kanban/server.log`
+- Database: `~/.claude-board/kanban.db`
+- Logs: `~/.claude-board/server.log`
 
 ## Development
 
 ```bash
-git clone https://github.com/kamranahmedse/claude-kanban.git
-cd claude-kanban
+git clone https://github.com/kamranahmedse/claude-board.git
+cd claude-board
 make setup    # Install deps, build, configure MCP
 make dev      # Start dev server with hot reload
 ```

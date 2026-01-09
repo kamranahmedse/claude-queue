@@ -231,7 +231,7 @@ function BoardContent(props: BoardContentProps) {
       )}
       <div className="flex-1 pt-0 pb-4 px-4 overflow-auto">
         <div className="flex gap-0 items-stretch min-h-full w-max">
-          <div className="border-r border-zinc-800 pr-3 mr-3 flex flex-col">
+          <div className="border-r border-zinc-800 pr-3 flex flex-col">
             <TemplateColumn
               templates={templates}
               onTemplateClick={setEditingTemplate}
@@ -240,35 +240,32 @@ function BoardContent(props: BoardContentProps) {
             />
           </div>
           {COLUMNS.map((column, index) => (
-            <div
+            <Column
               key={column.id}
-              className={`flex flex-col ${index < COLUMNS.length - 1 ? "border-r border-zinc-800 pr-3 mr-3" : ""}`}
-            >
-              <Column
-                id={column.id}
-                title={column.title}
-                tasks={tasksByStatus[column.id]}
-                onTaskClick={setSelectedTask}
-                onAddClick={
-                  column.id === "backlog" || column.id === "ready"
-                    ? () => setAddTaskStatus(column.id)
-                    : undefined
+              id={column.id}
+              title={column.title}
+              tasks={tasksByStatus[column.id]}
+              onTaskClick={setSelectedTask}
+              onAddClick={
+                column.id === "backlog" || column.id === "ready"
+                  ? () => setAddTaskStatus(column.id)
+                  : undefined
+              }
+              onDeleteAll={
+                column.id !== "in_progress"
+                  ? () => deleteAllTasks.mutate(column.id)
+                  : undefined
+              }
+              isDeleting={deleteAllTasks.isPending}
+              showBorder={index < COLUMNS.length - 1}
+              onDrop={(taskId, position) => {
+                if (dragItem?.type === "task") {
+                  handleTaskDrop(column.id, taskId, position);
+                } else if (dragItem?.type === "template") {
+                  handleTemplateDrop(column.id);
                 }
-                onDeleteAll={
-                  column.id !== "in_progress"
-                    ? () => deleteAllTasks.mutate(column.id)
-                    : undefined
-                }
-                isDeleting={deleteAllTasks.isPending}
-                onDrop={(taskId, position) => {
-                  if (dragItem?.type === "task") {
-                    handleTaskDrop(column.id, taskId, position);
-                  } else if (dragItem?.type === "template") {
-                    handleTemplateDrop(column.id);
-                  }
-                }}
-              />
-            </div>
+              }}
+            />
           ))}
         </div>
       </div>

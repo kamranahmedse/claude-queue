@@ -1,11 +1,11 @@
 {
-  "name": "claude-kanban",
+  "name": "claude-board",
   "version": "1.0.0",
   "description": "A local kanban board for managing Claude Code projects",
   "type": "module",
   "bin": {
-    "claude-kanban": "./dist/cli.js",
-    "claude-kanban-mcp": "./dist/mcp.js"
+    "claude-board": "./dist/cli.js",
+    "claude-board-mcp": "./dist/mcp.js"
   },
   "main": "./dist/server.js",
   "exports": {
@@ -31,13 +31,13 @@
   ],
   "author": "Kamran Ahmed <kamranahmed.se@gmail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/kamranahmedse/claude-kanban#readme",
+  "homepage": "https://github.com/kamranahmedse/claude-board#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kamranahmedse/claude-kanban.git"
+    "url": "git+https://github.com/kamranahmedse/claude-board.git"
   },
   "bugs": {
-    "url": "https://github.com/kamranahmedse/claude-kanban/issues"
+    "url": "https://github.com/kamranahmedse/claude-board/issues"
   },
   "engines": {
     "node": ">=18"

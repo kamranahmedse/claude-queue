@@ -1,10 +1,10 @@
 {
-  "name": "@claude-kanban/mcp",
+  "name": "@claude-board/mcp",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "claude-kanban-mcp": "./dist/index.js"
+    "claude-board-mcp": "./dist/index.js"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts",

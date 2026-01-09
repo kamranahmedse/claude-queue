@@ -20,7 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8"));
 
 program
-  .name("claude-kanban")
+  .name("claude-board")
   .description("Local kanban board for managing Claude Code projects")
   .version(pkg.version);
 
@@ -87,7 +87,7 @@ program
     const port = parseInt(options.port);
 
     if (!(await isServerRunning(port))) {
-      console.error("Server is not running. Start it with: claude-kanban");
+      console.error("Server is not running. Start it with: claude-board");
       process.exit(1);
     }
 
@@ -118,7 +118,7 @@ program
     const port = parseInt(options.port);
 
     if (!(await isServerRunning(port))) {
-      console.error("Server is not running. Start it with: claude-kanban");
+      console.error("Server is not running. Start it with: claude-board");
       process.exit(1);
     }
 
