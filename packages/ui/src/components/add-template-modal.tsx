@@ -1,25 +1,14 @@
-import { useState } from "react";
 import { X } from "lucide-react";
+import { TaskTemplateForm } from "./task-template-form";
 
 interface AddTemplateModalProps {
   onClose: () => void;
-  onSubmit: (title: string, description: string) => void;
+  onSubmit: (title: string, description: string, images: File[]) => void;
   isLoading: boolean;
 }
 
 export function AddTemplateModal(props: AddTemplateModalProps) {
   const { onClose, onSubmit, isLoading } = props;
-
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      return;
-    }
-    onSubmit(title.trim(), description.trim());
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -39,57 +28,15 @@ export function AddTemplateModal(props: AddTemplateModalProps) {
             <X className="w-4 h-4" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label
-              htmlFor="title"
-              className="block text-xs text-zinc-500 mb-1.5"
-            >
-              Title
-            </label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Template title..."
-              autoFocus
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="description"
-              className="block text-xs text-zinc-500 mb-1.5"
-            >
-              Description (optional)
-            </label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add more details..."
-              rows={3}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 resize-none"
-            />
-          </div>
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!title.trim() || isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-            >
-              {isLoading ? "Adding..." : "Add template"}
-            </button>
-          </div>
-        </form>
+        <TaskTemplateForm
+          onSubmit={onSubmit}
+          onCancel={onClose}
+          isLoading={isLoading}
+          submitLabel="Add template"
+          loadingLabel="Adding..."
+          titlePlaceholder="Template title..."
+          submitButtonClassName="bg-indigo-600 hover:bg-indigo-500"
+        />
       </div>
     </div>
   );

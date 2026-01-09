@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, ChevronDown, ImageIcon } from "lucide-react";
+import { TemplateImageUpload } from "./template-image-upload";
 import type { Template } from "~/types";
 
 interface EditTemplateModalProps {
@@ -14,6 +15,7 @@ export function EditTemplateModal(props: EditTemplateModalProps) {
 
   const [title, setTitle] = useState(template.title);
   const [description, setDescription] = useState(template.description || "");
+  const [showImages, setShowImages] = useState(false);
 
   useEffect(() => {
     setTitle(template.title);
@@ -79,6 +81,26 @@ export function EditTemplateModal(props: EditTemplateModalProps) {
               rows={3}
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 resize-none"
             />
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowImages(!showImages)}
+              className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-400 py-2 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <ImageIcon className="w-3.5 h-3.5" />
+                Images
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${showImages ? "rotate-180" : ""}`}
+              />
+            </button>
+            {showImages && (
+              <div className="mt-2">
+                <TemplateImageUpload templateId={template.id} />
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-end gap-3 pt-2">
             <button

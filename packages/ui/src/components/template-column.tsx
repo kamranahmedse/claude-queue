@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Plus, HelpCircle, LayoutTemplate, ChevronLeft } from "lucide-react";
-import { useDragContext } from "~/hooks/use-drag-and-drop";
+import { Droppable, Draggable } from "@hello-pangea/dnd";
 import type { Template } from "~/types";
 import { TemplateCard } from "./template-card";
 
@@ -10,21 +10,16 @@ interface TemplateColumnProps {
   templates: Template[];
   onTemplateClick: (template: Template) => void;
   onAddClick: () => void;
-  onReorder?: (templateId: string, newPosition: number) => void;
 }
 
 export function TemplateColumn(props: TemplateColumnProps) {
-  const { templates, onTemplateClick, onAddClick, onReorder } = props;
+  const { templates, onTemplateClick, onAddClick } = props;
+
   const [showHelp, setShowHelp] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem(COLLAPSED_KEY) === "true";
   });
-  const [isDropTargetEnd, setIsDropTargetEnd] = useState(false);
   const helpRef = useRef<HTMLDivElement>(null);
-  const columnRef = useRef<HTMLDivElement>(null);
-
-  const { dragItem, dropTarget } = useDragContext();
-  const isDraggingTemplate = dragItem?.type === "template";
 
   useEffect(() => {
     if (!showHelp) {
@@ -47,71 +42,37 @@ export function TemplateColumn(props: TemplateColumnProps) {
     localStorage.setItem(COLLAPSED_KEY, String(newValue));
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-
-    if (isDraggingTemplate) {
-      e.dataTransfer.dropEffect = "move";
-
-      const hasTemplateDropTarget = dropTarget?.type === "template";
-      if (!hasTemplateDropTarget) {
-        setIsDropTargetEnd(true);
-      } else {
-        setIsDropTargetEnd(false);
-      }
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (columnRef.current?.contains(e.relatedTarget as Node)) {
-      return;
-    }
-
-    setIsDropTargetEnd(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDropTargetEnd(false);
-
-    if (!onReorder || !dragItem || dragItem.type !== "template") {
-      return;
-    }
-
-    let targetPosition = templates.length;
-
-    if (dropTarget?.type === "template") {
-      const targetIndex = templates.findIndex((t) => t.id === dropTarget.templateId);
-      if (targetIndex !== -1) {
-        targetPosition = dropTarget.position === "before" ? targetIndex : targetIndex + 1;
-      }
-    }
-
-    onReorder(dragItem.template.id, targetPosition);
-  };
-
   if (isCollapsed) {
     return (
-      <div
-        className="w-10 shrink-0 flex flex-col items-center py-3 select-none cursor-pointer h-full hover:bg-indigo-900/20 transition-colors"
-        onClick={handleToggleCollapse}
-        title="Expand templates"
-      >
-        <div className="flex flex-col items-center gap-2">
-          <LayoutTemplate className="w-4 h-4 text-indigo-400" />
-          <span className="text-xs text-indigo-400 font-medium writing-mode-vertical whitespace-nowrap">
-            Templates
-          </span>
-          <span className="text-xs text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded">
-            {templates.length}
-          </span>
-        </div>
-      </div>
+      <Droppable droppableId="templates" type="TEMPLATE">
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={`
+              shrink-0 flex flex-col items-center px-2 py-3 select-none cursor-pointer border-r border-zinc-800
+              hover:bg-indigo-900/20 transition-colors
+              ${snapshot.isDraggingOver ? "bg-indigo-900/20" : ""}
+            `}
+            onClick={handleToggleCollapse}
+            title="Expand templates"
+          >
+            <LayoutTemplate className="w-4 h-4 text-indigo-400" />
+            <span className="text-xs text-indigo-400 font-medium writing-mode-vertical whitespace-nowrap mt-2">
+              Templates
+            </span>
+            <span className="text-xs text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded mt-2">
+              {templates.length}
+            </span>
+            <div className="hidden">{provided.placeholder}</div>
+          </div>
+        )}
+      </Droppable>
     );
   }
 
   return (
-    <div className="flex-1 min-w-[280px] max-w-[320px] select-none flex flex-col">
+    <div className="w-[300px] shrink-0 select-none flex flex-col border-r border-zinc-800 pr-3">
       <div className="sticky top-0 z-10 bg-zinc-950 flex items-center justify-between py-3 px-1">
         <div className="flex items-center gap-1.5">
           <button
@@ -144,33 +105,57 @@ export function TemplateColumn(props: TemplateColumnProps) {
         </div>
         <span className="text-xs text-zinc-600">{templates.length}</span>
       </div>
-      <div
-        ref={columnRef}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className="flex-1 px-1"
-      >
-        <div className="space-y-2">
-          {templates.map((template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              onClick={() => onTemplateClick(template)}
-            />
-          ))}
-        </div>
-        {isDropTargetEnd && isDraggingTemplate && templates.length > 0 && (
-          <div className="mt-2 h-0.5 bg-indigo-500 rounded-full" />
+      <Droppable droppableId="templates" type="TEMPLATE">
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={`
+              flex-1 px-1 min-h-[100px] rounded-lg transition-colors
+              ${snapshot.isDraggingOver ? "bg-indigo-900/10 ring-2 ring-indigo-500/30 ring-inset" : ""}
+            `}
+          >
+            <div className="space-y-2">
+              {templates.map((template, index) => (
+                <Draggable
+                  key={template.id}
+                  draggableId={template.id}
+                  index={index}
+                >
+                  {(dragProvided, dragSnapshot) => {
+                    const style = {
+                      ...dragProvided.draggableProps.style,
+                      transition: dragSnapshot.isDropAnimating ? "transform 0.001s" : dragProvided.draggableProps.style?.transition,
+                    };
+                    return (
+                      <div
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        {...dragProvided.dragHandleProps}
+                        style={style}
+                      >
+                        <TemplateCard
+                          template={template}
+                          onClick={() => onTemplateClick(template)}
+                          isDragging={dragSnapshot.isDragging}
+                        />
+                      </div>
+                    );
+                  }}
+                </Draggable>
+              ))}
+            </div>
+            {provided.placeholder}
+            <button
+              onClick={onAddClick}
+              className="w-full mt-2 p-2 flex items-center justify-center gap-2 text-xs text-indigo-500 hover:text-indigo-400 hover:bg-indigo-900/20 rounded-lg transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              Add template
+            </button>
+          </div>
         )}
-        <button
-          onClick={onAddClick}
-          className="w-full mt-2 p-2 flex items-center justify-center gap-2 text-xs text-indigo-500 hover:text-indigo-400 hover:bg-indigo-900/20 rounded-lg transition-colors"
-        >
-          <Plus className="w-3 h-3" />
-          Add template
-        </button>
-      </div>
+      </Droppable>
     </div>
   );
 }

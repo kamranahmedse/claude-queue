@@ -1,7 +1,6 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Clock, Lock, RotateCcw, XCircle } from "lucide-react";
 import { useAddComment } from "~/queries/tasks";
-import { useDragContext } from "~/hooks/use-drag-and-drop";
 import { ConfirmDialog } from "./confirm-dialog";
 import { Tooltip } from "./tooltip";
 import type { Task } from "~/types";
@@ -40,17 +39,15 @@ function formatDuration(
 
 interface TaskCardProps {
   task: Task;
-  onClick: () => void;
+  onClick?: () => void;
+  isDragging?: boolean;
 }
 
 export function TaskCard(props: TaskCardProps) {
-  const { task, onClick } = props;
+  const { task, onClick, isDragging = false } = props;
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const { dragItem, dropTarget, setDragItem, setDropTarget } = useDragContext();
 
   const isLocked = task.status === "in_progress";
   const isDone = task.status === "done";
@@ -58,71 +55,6 @@ export function TaskCard(props: TaskCardProps) {
     ? formatDuration(task.started_at, task.completed_at)
     : null;
   const addComment = useAddComment(task.id);
-
-  const isDragging = dragItem?.type === "task" && dragItem.task.id === task.id;
-  const isDropTargetBefore =
-    dropTarget?.type === "task" &&
-    dropTarget.taskId === task.id &&
-    dropTarget.position === "before";
-  const isDropTargetAfter =
-    dropTarget?.type === "task" &&
-    dropTarget.taskId === task.id &&
-    dropTarget.position === "after";
-
-  const handleDragStart = (e: React.DragEvent) => {
-    if (isLocked) {
-      e.preventDefault();
-      return;
-    }
-
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/json", JSON.stringify({ type: "task", taskId: task.id }));
-
-    requestAnimationFrame(() => {
-      setDragItem({ type: "task", task });
-    });
-  };
-
-  const handleDragEnd = () => {
-    setDragItem(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!dragItem || dragItem.type !== "task") {
-      return;
-    }
-
-    if (dragItem.task.id === task.id) {
-      return;
-    }
-
-    if (dragItem.task.status === "in_progress") {
-      return;
-    }
-
-    const rect = cardRef.current?.getBoundingClientRect();
-    if (!rect) {
-      return;
-    }
-
-    const midpoint = rect.top + rect.height / 2;
-    const position = e.clientY < midpoint ? "before" : "after";
-
-    setDropTarget({ type: "task", taskId: task.id, position });
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node)) {
-      return;
-    }
-
-    if (dropTarget?.type === "task" && dropTarget.taskId === task.id) {
-      setDropTarget(null);
-    }
-  };
 
   const handleResetClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -153,17 +85,8 @@ export function TaskCard(props: TaskCardProps) {
   };
 
   return (
-    <div className="relative">
-      {isDropTargetBefore && (
-        <div className="absolute -top-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
-      )}
+    <>
       <div
-        ref={cardRef}
-        draggable={!isLocked}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
         onClick={onClick}
         className={`
           p-3 rounded-lg border select-none
@@ -240,9 +163,6 @@ export function TaskCard(props: TaskCardProps) {
           </div>
         )}
       </div>
-      {isDropTargetAfter && (
-        <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
-      )}
 
       {showResetConfirm && (
         <ConfirmDialog
@@ -285,6 +205,6 @@ export function TaskCard(props: TaskCardProps) {
           onCancel={() => setShowCancelConfirm(false)}
         />
       )}
-    </div>
+    </>
   );
 }

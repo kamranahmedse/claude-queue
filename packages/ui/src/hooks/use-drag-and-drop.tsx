@@ -1,59 +1,117 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useRef, useCallback, type ReactNode } from "react";
+import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import type { Task, TaskStatus, Template } from "~/types";
 
-type DragItem =
-  | { type: "task"; task: Task }
-  | { type: "template"; template: Template }
-  | null;
-
-type DropTarget =
-  | { type: "task"; taskId: string; position: "before" | "after" }
-  | { type: "column"; status: TaskStatus }
-  | { type: "template"; templateId: string; position: "before" | "after" }
-  | null;
-
 interface DragContextValue {
-  dragItem: DragItem;
-  dropTarget: DropTarget;
-  setDragItem: (item: DragItem) => void;
-  setDropTarget: (target: DropTarget) => void;
   isDragging: boolean;
 }
 
-const DragContext = createContext<DragContextValue | null>(null);
+const DragStateContext = createContext<DragContextValue>({ isDragging: false });
+
+export function useDragContext() {
+  return useContext(DragStateContext);
+}
 
 interface DragProviderProps {
   children: ReactNode;
+  tasksByStatus: Record<TaskStatus, Task[]>;
+  templates: Template[];
+  onMoveTask: (taskId: string, toStatus: TaskStatus, toPosition: number) => void;
+  onMoveTemplate: (templateId: string, toPosition: number) => void;
+  onTemplateDropOnColumn: (template: Template, status: TaskStatus) => void;
 }
 
 export function DragProvider(props: DragProviderProps) {
-  const { children } = props;
+  const {
+    children,
+    tasksByStatus,
+    templates,
+    onMoveTask,
+    onMoveTemplate,
+    onTemplateDropOnColumn,
+  } = props;
 
-  const [dragItem, setDragItem] = useState<DragItem>(null);
-  const [dropTarget, setDropTarget] = useState<DropTarget>(null);
+  const lastDragIdRef = useRef<string | null>(null);
+  const tasksByStatusRef = useRef(tasksByStatus);
+  const templatesRef = useRef(templates);
 
-  const handleSetDragItem = useCallback((item: DragItem) => {
-    setDragItem(item);
-    if (!item) {
-      setDropTarget(null);
+  tasksByStatusRef.current = tasksByStatus;
+  templatesRef.current = templates;
+
+  const handleDragEnd = useCallback((result: DropResult) => {
+    const { source, destination, draggableId, type } = result;
+
+    if (!destination) {
+      return;
     }
-  }, []);
 
-  const value: DragContextValue = {
-    dragItem,
-    dropTarget,
-    setDragItem: handleSetDragItem,
-    setDropTarget,
-    isDragging: dragItem !== null,
-  };
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
+      return;
+    }
 
-  return <DragContext.Provider value={value}>{children}</DragContext.Provider>;
-}
+    const dragKey = `${draggableId}-${destination.droppableId}-${destination.index}`;
+    if (lastDragIdRef.current === dragKey) {
+      return;
+    }
+    lastDragIdRef.current = dragKey;
+    setTimeout(() => {
+      lastDragIdRef.current = null;
+    }, 100);
 
-export function useDragContext() {
-  const context = useContext(DragContext);
-  if (!context) {
-    throw new Error("useDragContext must be used within a DragProvider");
-  }
-  return context;
+    if (type === "TASK") {
+      const targetStatus = destination.droppableId as TaskStatus;
+
+      if (targetStatus === "in_progress") {
+        return;
+      }
+
+      const targetTasks = tasksByStatusRef.current[targetStatus];
+      let targetPosition: number;
+
+      if (targetTasks.length === 0) {
+        targetPosition = 0;
+      } else if (destination.index >= targetTasks.length) {
+        targetPosition = targetTasks[targetTasks.length - 1].position + 1;
+      } else {
+        targetPosition = targetTasks[destination.index].position;
+      }
+
+      onMoveTask(draggableId, targetStatus, targetPosition);
+    }
+
+    if (type === "TEMPLATE") {
+      const destId = destination.droppableId;
+
+      if (destId === "backlog" || destId === "ready") {
+        const template = templatesRef.current.find((t) => t.id === draggableId);
+        if (template) {
+          onTemplateDropOnColumn(template, destId);
+        }
+        return;
+      }
+
+      if (destId === "templates") {
+        const sortedTemplates = [...templatesRef.current].sort((a, b) => a.position - b.position);
+        let targetPosition: number;
+
+        if (sortedTemplates.length === 0) {
+          targetPosition = 0;
+        } else if (destination.index >= sortedTemplates.length) {
+          targetPosition = sortedTemplates[sortedTemplates.length - 1].position + 1;
+        } else {
+          targetPosition = sortedTemplates[destination.index].position;
+        }
+
+        onMoveTemplate(draggableId, targetPosition);
+      }
+    }
+  }, [onMoveTask, onMoveTemplate, onTemplateDropOnColumn]);
+
+  return (
+    <DragStateContext.Provider value={{ isDragging: false }}>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        {children}
+      </DragDropContext>
+    </DragStateContext.Provider>
+  );
 }

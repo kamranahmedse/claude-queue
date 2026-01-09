@@ -28,6 +28,17 @@ router.get("/task/:taskId", (req, res) => {
   res.json(attachments.map(rowToAttachment));
 });
 
+router.get("/template/:templateId", (req, res) => {
+  const db = getDb();
+  const templateId = req.params.templateId;
+
+  const attachments = db
+    .prepare("SELECT * FROM attachments WHERE template_id = ? ORDER BY created_at ASC")
+    .all(templateId) as AttachmentRow[];
+
+  res.json(attachments.map(rowToAttachment));
+});
+
 router.post("/task/:taskId", (req, res) => {
   const db = getDb();
   const taskId = req.params.taskId;
@@ -59,6 +70,42 @@ router.post("/task/:taskId", (req, res) => {
     INSERT INTO attachments (id, task_id, filename, original_name, mime_type, size)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(id, taskId, storedFilename, filename, mimeType, buffer.length);
+
+  const attachment = db.prepare("SELECT * FROM attachments WHERE id = ?").get(id) as AttachmentRow;
+  res.status(201).json(rowToAttachment(attachment));
+});
+
+router.post("/template/:templateId", (req, res) => {
+  const db = getDb();
+  const templateId = req.params.templateId;
+
+  const template = db.prepare("SELECT id FROM templates WHERE id = ?").get(templateId);
+  if (!template) {
+    res.status(404).json({ error: "Template not found" });
+    return;
+  }
+
+  const { filename, data, mimeType } = req.body;
+
+  if (!filename || !data || !mimeType) {
+    res.status(400).json({ error: "filename, data, and mimeType are required" });
+    return;
+  }
+
+  ensureAttachmentsDir();
+
+  const id = nanoid();
+  const ext = extname(filename) || ".bin";
+  const storedFilename = `${id}${ext}`;
+  const filePath = join(ATTACHMENTS_DIR, storedFilename);
+
+  const buffer = Buffer.from(data, "base64");
+  writeFileSync(filePath, buffer);
+
+  db.prepare(`
+    INSERT INTO attachments (id, template_id, filename, original_name, mime_type, size)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, templateId, storedFilename, filename, mimeType, buffer.length);
 
   const attachment = db.prepare("SELECT * FROM attachments WHERE id = ?").get(id) as AttachmentRow;
   res.status(201).json(rowToAttachment(attachment));

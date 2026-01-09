@@ -10,6 +10,14 @@ export function listAttachmentsOptions(taskId: string) {
   });
 }
 
+export function listTemplateAttachmentsOptions(templateId: string) {
+  return queryOptions({
+    queryKey: ["attachments", "template", templateId],
+    queryFn: () => httpGet<Attachment[]>(`/attachments/template/${templateId}`),
+    enabled: !!templateId,
+  });
+}
+
 export function useUploadAttachment(taskId: string) {
   const queryClient = useQueryClient();
 
@@ -35,6 +43,35 @@ export function useDeleteAttachment(taskId: string) {
     mutationFn: (attachmentId: string) => httpDelete<void>(`/attachments/${attachmentId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attachments", taskId] });
+    },
+  });
+}
+
+export function useUploadTemplateAttachment(templateId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const data = await fileToBase64(file);
+      return httpPost<Attachment>(`/attachments/template/${templateId}`, {
+        filename: file.name,
+        data,
+        mimeType: file.type,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attachments", "template", templateId] });
+    },
+  });
+}
+
+export function useDeleteTemplateAttachment(templateId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (attachmentId: string) => httpDelete<void>(`/attachments/${attachmentId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attachments", "template", templateId] });
     },
   });
 }

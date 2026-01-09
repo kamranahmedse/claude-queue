@@ -5,7 +5,7 @@ import { listTemplatesOptions, useCreateTemplate, useMoveTemplate, useUpdateTemp
 import { httpPost } from "~/lib/http";
 import type { Attachment } from "~/types";
 import { useTaskNotifications } from "~/hooks/use-task-notifications";
-import { DragProvider, useDragContext } from "~/hooks/use-drag-and-drop";
+import { DragProvider } from "~/hooks/use-drag-and-drop";
 import type { Task, TaskStatus, Template } from "~/types";
 import { COLUMNS } from "~/types";
 import { Column } from "./column";
@@ -37,6 +37,15 @@ async function uploadAttachment(taskId: string, file: File): Promise<Attachment>
   });
 }
 
+async function uploadTemplateAttachment(templateId: string, file: File): Promise<Attachment> {
+  const data = await fileToBase64(file);
+  return httpPost<Attachment>(`/attachments/template/${templateId}`, {
+    filename: file.name,
+    data,
+    mimeType: file.type,
+  });
+}
+
 interface BoardProps {
   projectId: string;
 }
@@ -60,8 +69,6 @@ function BoardContent(props: BoardContentProps) {
   const [addTaskStatus, setAddTaskStatus] = useState<TaskStatus | null>(null);
   const [addTaskFromTemplate, setAddTaskFromTemplate] = useState<Template | null>(null);
   const [showAddTemplate, setShowAddTemplate] = useState(false);
-
-  const { dragItem, setDragItem } = useDragContext();
 
   useImperativeHandle(boardRef, () => ({
     openAddTask: () => setAddTaskStatus("ready"),
@@ -112,68 +119,37 @@ function BoardContent(props: BoardContentProps) {
     return grouped;
   }, [tasks]);
 
-  const handleTaskDrop = useCallback(
-    (columnId: TaskStatus, taskId: string, position: number) => {
-      const task = tasks.find((t) => t.id === taskId);
-      if (!task) {
-        return;
-      }
+  const sortedTemplates = useMemo(() => {
+    return [...templates].sort((a, b) => a.position - b.position);
+  }, [templates]);
 
-      if (columnId === "in_progress") {
-        return;
-      }
-
-      if (task.status === columnId && task.position === position) {
-        return;
-      }
-
+  const handleMoveTask = useCallback(
+    (taskId: string, toStatus: TaskStatus, toPosition: number) => {
       moveTask.mutate({
         taskId,
-        status: columnId,
-        position,
+        status: toStatus,
+        position: toPosition,
       });
-
-      setDragItem(null);
     },
-    [tasks, moveTask, setDragItem]
+    [moveTask]
   );
 
-  const handleTemplateDrop = useCallback(
-    (columnId: TaskStatus) => {
-      if (dragItem?.type !== "template") {
-        return;
-      }
-
-      if (columnId !== "backlog" && columnId !== "ready") {
-        return;
-      }
-
-      setAddTaskStatus(columnId);
-      setAddTaskFromTemplate(dragItem.template);
-      setDragItem(null);
-    },
-    [dragItem, setDragItem]
-  );
-
-  const handleTemplateReorder = useCallback(
-    (templateId: string, newPosition: number) => {
-      const template = templates.find((t) => t.id === templateId);
-      if (!template) {
-        return;
-      }
-
-      if (template.position === newPosition) {
-        return;
-      }
-
+  const handleMoveTemplate = useCallback(
+    (templateId: string, toPosition: number) => {
       moveTemplate.mutate({
         templateId,
-        position: newPosition,
+        position: toPosition,
       });
-
-      setDragItem(null);
     },
-    [templates, moveTemplate, setDragItem]
+    [moveTemplate]
+  );
+
+  const handleTemplateDropOnColumn = useCallback(
+    (template: Template, status: TaskStatus) => {
+      setAddTaskStatus(status);
+      setAddTaskFromTemplate(template);
+    },
+    []
   );
 
   const handleAddTask = async (title: string, description: string, images: File[]) => {
@@ -199,11 +175,16 @@ function BoardContent(props: BoardContentProps) {
     setAddTaskFromTemplate(null);
   };
 
-  const handleAddTemplate = (title: string, description: string) => {
+  const handleAddTemplate = async (title: string, description: string, images: File[]) => {
     createTemplate.mutate(
       { title, description: description || undefined },
       {
-        onSuccess: () => setShowAddTemplate(false),
+        onSuccess: async (template) => {
+          if (images.length > 0) {
+            await Promise.all(images.map((file) => uploadTemplateAttachment(template.id, file)));
+          }
+          setShowAddTemplate(false);
+        },
       }
     );
   };
@@ -223,93 +204,82 @@ function BoardContent(props: BoardContentProps) {
   const showLoading = isLoading || isLoadingTemplates;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 relative">
-      {showLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-10">
-          <div className="text-sm text-zinc-500">Loading...</div>
-        </div>
-      )}
-      <div className="flex-1 pt-0 pb-4 px-4 overflow-auto">
-        <div className="flex gap-0 items-stretch min-h-full w-max">
-          <div className="border-r border-zinc-800 pr-3 flex flex-col">
+    <DragProvider
+      tasksByStatus={tasksByStatus}
+      templates={templates}
+      onMoveTask={handleMoveTask}
+      onMoveTemplate={handleMoveTemplate}
+      onTemplateDropOnColumn={handleTemplateDropOnColumn}
+    >
+      <div className="flex-1 flex flex-col min-h-0 relative">
+        {showLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-10">
+            <div className="text-sm text-zinc-500">Loading...</div>
+          </div>
+        )}
+        <div className="flex-1 pt-0 pb-4 px-4 overflow-auto">
+          <div className="flex gap-0 items-stretch min-h-full w-max">
             <TemplateColumn
-              templates={templates}
+              templates={sortedTemplates}
               onTemplateClick={setEditingTemplate}
               onAddClick={() => setShowAddTemplate(true)}
-              onReorder={handleTemplateReorder}
             />
-          </div>
-          {COLUMNS.map((column, index) => (
-            <Column
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              tasks={tasksByStatus[column.id]}
-              onTaskClick={setSelectedTask}
-              onAddClick={
-                column.id === "backlog" || column.id === "ready"
-                  ? () => setAddTaskStatus(column.id)
-                  : undefined
-              }
-              onDeleteAll={
-                column.id !== "in_progress"
-                  ? () => deleteAllTasks.mutate(column.id)
-                  : undefined
-              }
-              isDeleting={deleteAllTasks.isPending}
-              showBorder={index < COLUMNS.length - 1}
-              onDrop={(taskId, position) => {
-                if (dragItem?.type === "task") {
-                  handleTaskDrop(column.id, taskId, position);
-                } else if (dragItem?.type === "template") {
-                  handleTemplateDrop(column.id);
+            {COLUMNS.map((column, index) => (
+              <Column
+                key={column.id}
+                id={column.id}
+                title={column.title}
+                tasks={tasksByStatus[column.id]}
+                onTaskClick={setSelectedTask}
+                onDeleteAll={
+                  column.id !== "in_progress"
+                    ? () => deleteAllTasks.mutate(column.id)
+                    : undefined
                 }
-              }}
-            />
-          ))}
+                isDeleting={deleteAllTasks.isPending}
+                showBorder={index < COLUMNS.length - 1}
+              />
+            ))}
+          </div>
         </div>
+
+        {selectedTask && (
+          <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
+        )}
+
+        {addTaskStatus && (
+          <AddTaskModal
+            status={addTaskStatus}
+            initialTemplate={addTaskFromTemplate}
+            onClose={handleCloseAddTask}
+            onSubmit={handleAddTask}
+            isLoading={createTask.isPending}
+          />
+        )}
+
+        {showAddTemplate && (
+          <AddTemplateModal
+            onClose={() => setShowAddTemplate(false)}
+            onSubmit={handleAddTemplate}
+            isLoading={createTemplate.isPending}
+          />
+        )}
+
+        {editingTemplate && (
+          <EditTemplateModal
+            template={editingTemplate}
+            onClose={() => setEditingTemplate(null)}
+            onSubmit={handleUpdateTemplate}
+            isLoading={updateTemplate.isPending}
+          />
+        )}
       </div>
-
-      {selectedTask && (
-        <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
-      )}
-
-      {addTaskStatus && (
-        <AddTaskModal
-          status={addTaskStatus}
-          initialTemplate={addTaskFromTemplate}
-          onClose={handleCloseAddTask}
-          onSubmit={handleAddTask}
-          isLoading={createTask.isPending}
-        />
-      )}
-
-      {showAddTemplate && (
-        <AddTemplateModal
-          onClose={() => setShowAddTemplate(false)}
-          onSubmit={handleAddTemplate}
-          isLoading={createTemplate.isPending}
-        />
-      )}
-
-      {editingTemplate && (
-        <EditTemplateModal
-          template={editingTemplate}
-          onClose={() => setEditingTemplate(null)}
-          onSubmit={handleUpdateTemplate}
-          isLoading={updateTemplate.isPending}
-        />
-      )}
-    </div>
+    </DragProvider>
   );
 }
 
 export const Board = forwardRef<BoardRef, BoardProps>(function Board(props, ref) {
   const { projectId } = props;
 
-  return (
-    <DragProvider>
-      <BoardContent projectId={projectId} boardRef={ref} />
-    </DragProvider>
-  );
+  return <BoardContent projectId={projectId} boardRef={ref} />;
 });
