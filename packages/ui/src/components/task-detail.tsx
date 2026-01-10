@@ -175,9 +175,7 @@ export function TaskDetail(props: TaskDetailProps) {
           {currentTask.description && (
             <div>
               <h3 className="text-xs text-zinc-500 mb-2">Description</h3>
-              <p className="text-sm text-zinc-300 whitespace-pre-wrap text-balance">
-                {currentTask.description}
-              </p>
+              <MarkdownRenderer content={currentTask.description} />
             </div>
           )}
 
