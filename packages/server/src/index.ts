@@ -85,7 +85,7 @@ export function createServer(port = 3333): { app: Express; server: Server } {
     const uiPath = uiPaths.find((p) => existsSync(join(p, "index.html")));
     if (uiPath) {
       app.use(express.static(uiPath));
-      app.get("*", (_req, res) => {
+      app.get("/{*splat}", (_req, res) => {
         res.sendFile(join(uiPath, "index.html"));
       });
     }

@@ -1,6 +1,6 @@
 {
   "name": "claude-queue",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "A local kanban board for managing Claude Code projects",
   "type": "module",
   "bin": {
@@ -48,6 +48,7 @@
     "commander": "^14.0.2",
     "cors": "^2.8.5",
     "express": "^5.2.1",
+    "http-proxy-middleware": "^3.0.5",
     "nanoid": "^5.1.6"
   },
   "devDependencies": {

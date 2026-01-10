@@ -114,8 +114,20 @@ export async function startServer(
 
   const child = spawn("node", [serverPath], {
     env,
-    stdio: verbose ? "inherit" : "pipe",
+    stdio: verbose ? "inherit" : ["ignore", "pipe", "pipe"],
   });
+
+  if (!verbose && child.stderr) {
+    let stderrOutput = "";
+    child.stderr.on("data", (data) => {
+      stderrOutput += data.toString();
+    });
+    child.on("exit", (code) => {
+      if (code !== 0 && stderrOutput) {
+        console.error("Server error:", stderrOutput.trim());
+      }
+    });
+  }
 
   return child;
 }
