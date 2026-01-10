@@ -84,10 +84,19 @@ export function createServer(port = 3333): { app: Express; server: Server } {
 
     const uiPath = uiPaths.find((p) => existsSync(join(p, "index.html")));
     if (uiPath) {
-      app.use(express.static(uiPath));
+      const indexPath = join(uiPath, "index.html");
+
+      // Allow dotfiles since npm cache uses .npm folder
+      app.use(express.static(uiPath, { dotfiles: "allow" }));
       app.get("/{*splat}", (_req, res) => {
-        res.sendFile(join(uiPath, "index.html"));
+        res.sendFile(indexPath, { dotfiles: "allow" }, (err) => {
+          if (err && !res.headersSent) {
+            res.status(404).send("Not found");
+          }
+        });
       });
+    } else {
+      log(`Warning: UI not found. Checked paths: ${uiPaths.join(", ")}`);
     }
   }
 

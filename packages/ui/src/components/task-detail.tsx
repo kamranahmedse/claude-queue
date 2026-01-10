@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type FormEvent } from "react";
+import { useState, useRef, useEffect, type ReactNode, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Trash2, Bot, User, Send, Pencil, Eye, History, ChevronDown, Clock, CheckCheck, Inbox, CheckCircle2 } from "lucide-react";
 import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask, listTasksOptions } from "~/queries/tasks";
@@ -69,6 +69,7 @@ export function TaskDetail(props: TaskDetailProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const [currentTask, setCurrentTask] = useState(initialTask);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
 
   const queryClient = useQueryClient();
   const { data: taskDetails } = useQuery(taskDetailsOptions(currentTask.id));
@@ -120,6 +121,12 @@ export function TaskDetail(props: TaskDetailProps) {
 
   const comments = taskDetails?.comments || [];
   const activities = taskDetails?.activities || [];
+
+  useEffect(() => {
+    if (comments.length > 0 && commentsEndRef.current) {
+      commentsEndRef.current.scrollIntoView({ behavior: "instant" });
+    }
+  }, [comments.length]);
 
   return (
     <>
@@ -229,6 +236,7 @@ export function TaskDetail(props: TaskDetailProps) {
               {comments.length === 0 && (
                 <p className="text-sm text-zinc-600">No comments yet</p>
               )}
+              <div ref={commentsEndRef} />
             </div>
           </div>
 

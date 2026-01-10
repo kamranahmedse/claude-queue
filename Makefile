@@ -112,9 +112,9 @@ publish-patch: ## Bump patch version (x.x.X), build, and publish
 	cd packages/cli && npm version patch --no-git-tag-version
 	@VERSION=$$(node -p "require('./packages/cli/package.json').version"); \
 	echo "Building version $$VERSION..."; \
-	cd packages/cli && node scripts/build.ts; \
+	(cd packages/cli && node scripts/build.ts); \
 	echo "\nPublishing to npm..."; \
-	cd packages/cli && npm publish; \
+	(cd packages/cli && npm publish); \
 	git add packages/cli/package.json; \
 	git commit -m "chore: release v$$VERSION"; \
 	git tag "v$$VERSION"; \
@@ -126,9 +126,9 @@ publish-minor: ## Bump minor version (x.X.0), build, and publish
 	cd packages/cli && npm version minor --no-git-tag-version
 	@VERSION=$$(node -p "require('./packages/cli/package.json').version"); \
 	echo "Building version $$VERSION..."; \
-	cd packages/cli && node scripts/build.ts; \
+	(cd packages/cli && node scripts/build.ts); \
 	echo "\nPublishing to npm..."; \
-	cd packages/cli && npm publish; \
+	(cd packages/cli && npm publish); \
 	git add packages/cli/package.json; \
 	git commit -m "chore: release v$$VERSION"; \
 	git tag "v$$VERSION"; \
@@ -140,9 +140,9 @@ publish-major: ## Bump major version (X.0.0), build, and publish
 	cd packages/cli && npm version major --no-git-tag-version
 	@VERSION=$$(node -p "require('./packages/cli/package.json').version"); \
 	echo "Building version $$VERSION..."; \
-	cd packages/cli && node scripts/build.ts; \
+	(cd packages/cli && node scripts/build.ts); \
 	echo "\nPublishing to npm..."; \
-	cd packages/cli && npm publish; \
+	(cd packages/cli && npm publish); \
 	git add packages/cli/package.json; \
 	git commit -m "chore: release v$$VERSION"; \
 	git tag "v$$VERSION"; \

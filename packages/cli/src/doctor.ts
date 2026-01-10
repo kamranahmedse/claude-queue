@@ -13,9 +13,9 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
 
   const claudeDirExists = existsSync(CLAUDE_DIR);
   if (claudeDirExists) {
-    console.log("✅ Claude directory exists (~/.claude)");
+    console.log("✅  Claude directory exists (~/.claude)");
   } else {
-    console.log("❌ Claude directory not found (~/.claude)");
+    console.log("❌  Claude directory not found (~/.claude)");
     issues++;
     if (fix) {
       mkdirSync(CLAUDE_DIR, { recursive: true });
@@ -31,9 +31,9 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
       const mcpServers = settings.mcpServers || {};
       mcpConfigured = !!mcpServers["claude-queue"];
       if (mcpConfigured) {
-        console.log("✅ MCP server configured in settings.json");
+        console.log("✅  MCP server configured in settings.json");
       } else {
-        console.log("❌ MCP server not configured");
+        console.log("❌  MCP server not configured");
         issues++;
         if (fix) {
           await configureMcp();
@@ -45,7 +45,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
       warnings++;
     }
   } else {
-    console.log("❌ settings.json not found");
+    console.log("❌  settings.json not found");
     issues++;
     if (fix) {
       await configureMcp();
@@ -55,9 +55,9 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
 
   const skillPath = join(SKILLS_DIR, "queue", "SKILL.md");
   if (existsSync(skillPath)) {
-    console.log("✅ /queue skill installed");
+    console.log("✅  /queue skill installed");
   } else {
-    console.log("❌ /queue skill not installed");
+    console.log("❌  /queue skill not installed");
     issues++;
     if (fix) {
       installSkills();
@@ -66,7 +66,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
   }
 
   if (existsSync(KANBAN_DIR)) {
-    console.log("✅ Queue data directory exists (~/.claude-queue)");
+    console.log("✅  Queue data directory exists (~/.claude-queue)");
   } else {
     console.log("⚠️  Queue data directory not created yet");
     warnings++;
@@ -76,7 +76,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
   if (existsSync(dbPath)) {
     const stats = await import("node:fs/promises").then((fs) => fs.stat(dbPath));
     const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
-    console.log(`✅ Database exists (${sizeMB} MB)`);
+    console.log(`✅  Database exists (${sizeMB} MB)`);
   } else {
     console.log("⚠️  Database not created yet (will be created on first run)");
     warnings++;
@@ -84,7 +84,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
 
   const serverRunning = await isServerRunning(port);
   if (serverRunning) {
-    console.log(`✅ Server running on port ${port}`);
+    console.log(`✅  Server running on port ${port}`);
 
     try {
       const response = await fetch(`http://localhost:${port}/api/maintenance/stats`);
@@ -105,7 +105,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
 
   const pid = getRunningPid();
   if (pid) {
-    console.log(`✅ PID file valid (${pid})`);
+    console.log(`✅  PID file valid (${pid})`);
   } else if (existsSync(join(KANBAN_DIR, "server.pid"))) {
     console.log("⚠️  Stale PID file found");
     warnings++;
@@ -117,11 +117,11 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
 
   console.log("\n" + "─".repeat(40));
   if (issues === 0 && warnings === 0) {
-    console.log("✅ All checks passed! Your setup looks good.\n");
+    console.log("✅  All checks passed! Your setup looks good.\n");
   } else if (issues === 0) {
     console.log(`⚠️  ${warnings} warning(s), but no critical issues.\n`);
   } else {
-    console.log(`❌ ${issues} issue(s) found, ${warnings} warning(s).\n`);
+    console.log(`❌  ${issues} issue(s) found, ${warnings} warning(s).\n`);
     if (!fix) {
       console.log("Run with --fix to attempt automatic fixes:");
       console.log("  npx claude-queue doctor --fix\n");

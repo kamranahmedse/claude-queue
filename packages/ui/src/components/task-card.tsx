@@ -127,7 +127,7 @@ export function TaskCard(props: TaskCardProps) {
             }
             maxWidth={350}
           >
-            <div className="mt-2 flex items-center gap-1 text-zinc-600 cursor-help">
+            <div className="mt-2 flex items-center gap-1 text-zinc-600">
               <span className="text-xs line-clamp-2">{task.description}</span>
             </div>
           </Tooltip>
