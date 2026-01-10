@@ -15,14 +15,16 @@ const COLUMN_ICONS: Record<TaskStatus, ReactNode> = {
   done: <CheckCheck className="w-4 h-4" />,
 };
 
-const COLUMN_HELP: Record<TaskStatus, { title: string; description: string }> = {
+const COLUMN_HELP: Record<TaskStatus, { title: string; description: string; tip?: string }> = {
   backlog: {
     title: "Backlog",
     description: "Tasks waiting to be prioritized. Move them to Ready when you want Claude to work on them.",
+    tip: "Auto-generate tasks with planning mode: /queue plan <project-id>",
   },
   ready: {
     title: "Ready",
     description: "Tasks ready for Claude to pick up. Claude will claim tasks from here in order.",
+    tip: "Auto-generate tasks with planning mode: /queue plan <project-id>",
   },
   in_progress: {
     title: "In Progress",
@@ -317,6 +319,11 @@ export function Column(props: ColumnProps) {
                     <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
                       {help.description}
                     </p>
+                    {help.tip && (
+                      <p className="mt-2 pt-2 border-t border-zinc-700 text-xs text-zinc-500 leading-relaxed">
+                        <span className="text-zinc-400">Tip:</span> {help.tip}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

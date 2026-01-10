@@ -83,43 +83,6 @@ export function ImageDropzone(props: ImageDropzoneProps) {
     }
   }, [handleAddFiles, disabled]);
 
-  const handlePaste = useCallback((e: ClipboardEvent) => {
-    if (disabled) {
-      return;
-    }
-
-    const items = e.clipboardData?.items;
-    if (!items) {
-      return;
-    }
-
-    const imageFiles: File[] = [];
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (file) {
-          imageFiles.push(file);
-        }
-      }
-    }
-
-    if (imageFiles.length > 0) {
-      e.preventDefault();
-      handleAddFiles(imageFiles);
-    }
-  }, [handleAddFiles, disabled]);
-
-  useEffect(() => {
-    if (disabled) {
-      return;
-    }
-
-    document.addEventListener("paste", handlePaste);
-    return () => {
-      document.removeEventListener("paste", handlePaste);
-    };
-  }, [handlePaste, disabled]);
-
   useEffect(() => {
     return () => {
       for (const img of images) {

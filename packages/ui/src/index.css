@@ -96,6 +96,28 @@ body {
   animation: progress-shimmer 2s ease-in-out infinite;
 }
 
+.blocked-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.blocked-glow::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(239, 68, 68, 0.7) 50%,
+    transparent 100%
+  );
+  background-size: 100% 200%;
+  animation: progress-shimmer 1.5s ease-in-out infinite;
+}
+
 .writing-mode-vertical {
   writing-mode: vertical-rl;
   text-orientation: mixed;

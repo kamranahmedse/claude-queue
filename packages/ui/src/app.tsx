@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { listProjectsOptions } from "~/queries/projects";
 import { listTasksOptions, useTasksRefetchInterval } from "~/queries/tasks";
 import { useKeyboardShortcuts } from "~/hooks/use-keyboard-shortcuts";
+import { useBlockedIndicator } from "~/hooks/use-blocked-indicator";
 import { Header } from "~/components/header";
 import { Board, type BoardRef } from "~/components/board";
 import { HelpDialog } from "~/components/help-dialog";
@@ -34,6 +35,8 @@ export function App() {
     enabled: !!selectedProjectId,
     refetchInterval,
   });
+
+  const hasBlockedTask = useBlockedIndicator(tasks);
 
   const handleCloseHelp = () => {
     setShowHelp(false);
@@ -136,6 +139,9 @@ export function App() {
 
   return (
     <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
+      {hasBlockedTask && (
+        <div className="h-0.5 bg-gradient-to-r from-transparent via-red-500/60 to-transparent animate-pulse" />
+      )}
       <Toaster
         position="top-right"
         theme="dark"

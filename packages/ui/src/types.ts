@@ -9,6 +9,8 @@ export interface Project {
 
 export type TaskStatus = "backlog" | "ready" | "in_progress" | "done";
 
+export type PendingAction = "cancel" | "reset" | null;
+
 export interface Task {
   id: string;
   project_id: string;
@@ -22,6 +24,7 @@ export interface Task {
   position: number;
   created_at: string;
   updated_at: string;
+  pending_action: PendingAction;
 }
 
 export interface Comment {

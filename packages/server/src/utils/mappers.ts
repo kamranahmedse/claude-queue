@@ -1,4 +1,4 @@
-import type { Task, Comment, TaskStatus, TaskActivity, TaskActivityType, Attachment, Prompt, PromptType } from "../types.js";
+import type { Task, Comment, TaskStatus, TaskActivity, TaskActivityType, Attachment, Prompt, PromptType, PendingAction } from "../types.js";
 
 export interface TaskRow {
   id: string;
@@ -25,10 +25,11 @@ export interface CommentRow {
   created_at: string;
 }
 
-export function rowToTask(row: TaskRow): Task {
+export function rowToTask(row: TaskRow, pendingAction: PendingAction = null): Task {
   return {
     ...row,
     blocked: Boolean(row.blocked),
+    pending_action: pendingAction,
   };
 }
 

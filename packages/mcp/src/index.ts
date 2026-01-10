@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { handleWatch } from "./handlers/watch.ts";
-import { handleGetTasks, handleClaimTask, handleCompleteTask } from "./handlers/tasks.ts";
+import { handleGetTasks, handleClaimTask, handleCompleteTask, handleMoveTask } from "./handlers/tasks.ts";
 import { handleCreateTask } from "./handlers/create-task.ts";
 import { handleUpdateActivity } from "./handlers/activity.ts";
 import { handleSetBlocked, handleWaitForReply } from "./handlers/blocking.ts";
@@ -123,6 +123,20 @@ server.registerTool(
   },
   async (args) => {
     return await handleCompleteTask(args);
+  }
+);
+
+server.registerTool(
+  "queue_move_task",
+  {
+    description: "Move a task to a different status column (backlog, ready, in_progress, or done). Use this when a task is cancelled or needs to be deferred.",
+    inputSchema: {
+      taskId: z.string().describe("Task ID"),
+      status: z.enum(["backlog", "ready", "in_progress", "done"]).describe("Target status to move the task to"),
+    },
+  },
+  async (args) => {
+    return await handleMoveTask(args);
   }
 );
 

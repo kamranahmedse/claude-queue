@@ -1,5 +1,5 @@
 import { useState, type MouseEvent } from "react";
-import { Clock, Lock, RotateCcw, XCircle } from "lucide-react";
+import { Clock, Lock, Loader2, RotateCcw, XCircle } from "lucide-react";
 import { useAddComment } from "~/queries/tasks";
 import { ConfirmDialog } from "./confirm-dialog";
 import { Tooltip } from "./tooltip";
@@ -90,6 +90,7 @@ export function TaskCard(props: TaskCardProps) {
         className={`
           p-3 rounded-lg border select-none cursor-pointer
           ${isLocked && !task.blocked ? "in-progress-glow" : ""}
+          ${task.blocked ? "blocked-glow" : ""}
           ${
             task.blocked
               ? "bg-red-900/20 border-red-500/50 hover:border-red-500"
@@ -137,7 +138,15 @@ export function TaskCard(props: TaskCardProps) {
             <span className="text-xs">{duration}</span>
           </div>
         )}
-        {isLocked && (
+        {isLocked && task.pending_action && (
+          <div className="mt-3 flex items-center gap-2 pt-2 border-t border-zinc-800">
+            <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              {task.pending_action === "cancel" ? "Aborting..." : "Restarting..."}
+            </div>
+          </div>
+        )}
+        {isLocked && !task.pending_action && (
           <div className="mt-3 flex items-center gap-2 pt-2 border-t border-zinc-800">
             <button
               onClick={handleResetClick}

@@ -146,3 +146,21 @@ export async function handleCompleteTask(args: Record<string, unknown>): Promise
     ],
   };
 }
+
+export async function handleMoveTask(args: Record<string, unknown>): Promise<ToolResult> {
+  const taskId = args?.taskId as string;
+  const status = args?.status as string;
+  const task = await httpPost<Task>(`/api/tasks/${taskId}/move`, {
+    status,
+    position: 0,
+  });
+
+  return {
+    content: [
+      {
+        type: "text",
+        text: `Task "${task.title}" moved to ${status}`,
+      },
+    ],
+  };
+}

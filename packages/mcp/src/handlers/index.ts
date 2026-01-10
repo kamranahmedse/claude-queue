@@ -1,5 +1,5 @@
 import { handleWatch } from "./watch.ts";
-import { handleGetTasks, handleClaimTask, handleCompleteTask } from "./tasks.ts";
+import { handleGetTasks, handleClaimTask, handleCompleteTask, handleMoveTask } from "./tasks.ts";
 import { handleCreateTask } from "./create-task.ts";
 import { handleUpdateActivity } from "./activity.ts";
 import { handleSetBlocked, handleWaitForReply } from "./blocking.ts";
@@ -23,6 +23,7 @@ export const handlers: Record<string, Handler> = {
   queue_set_blocked: handleSetBlocked,
   queue_wait_for_reply: handleWaitForReply,
   queue_complete_task: handleCompleteTask,
+  queue_move_task: handleMoveTask,
   queue_check_comments: handleCheckComments,
   queue_add_comment: handleAddComment,
   queue_list_projects: handleListProjects,

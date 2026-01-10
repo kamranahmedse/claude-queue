@@ -84,31 +84,35 @@ Work through tasks autonomously on the DEVELOPMENT server (port 3334).
 
 Repeat continuously:
 
-1. **Check for tasks**: Call `queue_get_tasks` with status "ready"
-2. **If no ready tasks**:
+1. **Check for in-progress tasks first**: Call `queue_get_tasks` with status "in_progress"
+   - If there's already an in-progress task, this means you were previously working on it (possibly before context compression/summarization)
+   - Resume working on that task from step 6 (don't claim it again - it's already claimed)
+   - The task's `starting_commit` field contains the commit hash from when it was claimed
+2. **Check for ready tasks**: If no in-progress tasks, call `queue_get_tasks` with status "ready"
+3. **If no ready tasks**:
    - Poll every 30 seconds for up to 3 minutes (6 polls)
    - If still no tasks after 3 minutes, inform user and stop
-3. **Claim task immediately**: When a ready task is found, IMMEDIATELY claim it to prevent the user from making changes while you prepare:
+4. **Claim task immediately**: When a ready task is found, IMMEDIATELY claim it to prevent the user from making changes while you prepare:
    - Run `git rev-parse --is-inside-work-tree 2>/dev/null && git rev-parse HEAD` in a single command to check if git repo and get commit hash
    - Call `queue_claim_task` with the task ID AND the starting_commit (use empty string "" if not a git repo)
    - This moves the task to in_progress right away so user sees it's being worked on
-4. **Read existing comments**: Call `queue_check_comments` to see any context or instructions the user may have already added
-5. **Work on the task**:
+5. **Read existing comments**: Call `queue_check_comments` to see any context or instructions the user may have already added
+6. **Work on the task**:
    - Update activity with `queue_update_activity` as you work
    - Do the actual work - write code, fix bugs, etc.
    - **Check for user feedback**: Call `queue_check_comments` periodically (before major steps) to see if user left new comments
    - If there are new comments, read them and accommodate the feedback in your work
-6. **If blocked**:
+7. **If blocked**:
    - Call `queue_set_blocked` with your question
    - Call `queue_wait_for_reply` to wait for response
-   - If `{ "deleted": true }` and this is a git repo, run `git reset --hard <starting_commit>` (the commit you passed in step 3) and go to step 1
+   - If `{ "deleted": true }` and this is a git repo, run `git reset --hard <starting_commit>` (the commit from step 4 or from the task's `starting_commit` field) and go to step 1
    - If `{ "deleted": true }` and NOT a git repo, just go to step 1 (changes cannot be auto-reverted)
    - If `{ "timeout": true }`, call `queue_wait_for_reply` again
-7. **Final check**: Before completing, call `queue_check_comments` one last time to ensure no new feedback was left during your work
-8. **Commit** (git repos only): Commit changes before marking the task as complete
-9. **Add summary** (REQUIRED): ALWAYS add a completion summary using `queue_add_comment` BEFORE calling complete. Example: "✅ Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
-10. **Complete**: Call `queue_complete_task` to move the task to Done (the comment from step 9 must already be added)
-11. **Repeat** from step 1
+8. **Final check**: Before completing, call `queue_check_comments` one last time to ensure no new feedback was left during your work
+9. **Commit** (git repos only): Commit changes before marking the task as complete
+10. **Add summary** (REQUIRED): ALWAYS add a completion summary using `queue_add_comment` BEFORE calling complete. Example: "✅ Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
+11. **Complete**: Call `queue_complete_task` to move the task to Done (the comment from step 10 must already be added)
+12. **Repeat** from step 1
 
 ## Rules
 
@@ -147,9 +151,9 @@ This ensures the user gets a chance to review and respond to your suggestions be
 User can trigger actions via the UI that leave special comments. When checking comments, look for these patterns:
 
 - `[ACTION:RESET]` - User wants to reset all changes. If in a git repo, run `git reset --hard <starting_commit>` to undo all changes including commits, then start the task fresh from the beginning. If not in a git repo, just start fresh (previous changes cannot be auto-reverted).
-- `[ACTION:CANCEL]` - User wants to cancel the task. If in a git repo, run `git reset --hard <starting_commit>` to undo all changes including commits. Then move the task to backlog status using the move API. If not in a git repo, just move to backlog (changes cannot be auto-reverted).
+- `[ACTION:CANCEL]` - User wants to cancel the task. If in a git repo, run `git reset --hard <starting_commit>` to undo all changes including commits. Then call `queue_move_task` with status "backlog" to move the task to backlog. If not in a git repo, just call `queue_move_task` to move to backlog (changes cannot be auto-reverted).
 
-**Note**: The `starting_commit` is stored in the task when you claim it (step 3). For in-progress tasks, it's also returned by `queue_get_tasks` in the task's `starting_commit` field. This will be empty for non-git directories.
+**Note**: The `starting_commit` is stored in the task when you claim it (step 4). For in-progress tasks, it's also returned by `queue_get_tasks` in the task's `starting_commit` field. This will be empty for non-git directories.
 
 ## Note
 

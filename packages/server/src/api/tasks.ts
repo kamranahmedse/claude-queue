@@ -11,7 +11,7 @@ import {
   type CommentRow,
   type TaskActivityRow,
 } from "../utils/mappers.js";
-import type { TaskWithActivities, TaskStatus } from "../types.js";
+import type { TaskWithActivities, TaskStatus, PendingAction } from "../types.js";
 
 const router: RouterType = Router();
 
@@ -30,7 +30,28 @@ router.get("/project/:projectId", (req, res) => {
   query += " ORDER BY position ASC";
 
   const tasks = db.prepare(query).all(...params) as TaskRow[];
-  res.json(tasks.map(rowToTask));
+
+  const pendingActionsQuery = db.prepare(`
+    SELECT task_id, content FROM comments
+    WHERE task_id IN (${tasks.map(() => "?").join(",")})
+    AND author = 'user'
+    AND seen = 0
+    AND (content LIKE '%[ACTION:CANCEL]%' OR content LIKE '%[ACTION:RESET]%')
+  `);
+
+  const pendingActions: Record<string, PendingAction> = {};
+  if (tasks.length > 0) {
+    const actionComments = pendingActionsQuery.all(...tasks.map(t => t.id)) as { task_id: string; content: string }[];
+    for (const comment of actionComments) {
+      if (comment.content.includes("[ACTION:CANCEL]")) {
+        pendingActions[comment.task_id] = "cancel";
+      } else if (comment.content.includes("[ACTION:RESET]")) {
+        pendingActions[comment.task_id] = "reset";
+      }
+    }
+  }
+
+  res.json(tasks.map(task => rowToTask(task, pendingActions[task.id] || null)));
 });
 
 router.get("/:id", (req, res) => {
@@ -50,8 +71,16 @@ router.get("/:id", (req, res) => {
     .prepare("SELECT * FROM task_activity WHERE task_id = ? ORDER BY created_at ASC")
     .all(req.params.id) as TaskActivityRow[];
 
+  let pendingAction: PendingAction = null;
+  const unseenActionComment = commentsRaw.find(
+    c => c.author === "user" && !c.seen && (c.content.includes("[ACTION:CANCEL]") || c.content.includes("[ACTION:RESET]"))
+  );
+  if (unseenActionComment) {
+    pendingAction = unseenActionComment.content.includes("[ACTION:CANCEL]") ? "cancel" : "reset";
+  }
+
   const result: TaskWithActivities = {
-    ...rowToTask(task),
+    ...rowToTask(task, pendingAction),
     comments: commentsRaw.map(rowToComment),
     activities: activitiesRaw.map(rowToTaskActivity),
   };
