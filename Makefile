@@ -64,7 +64,7 @@ install-mcp:
 uninstall: ## Remove skills and MCP config (keeps database)
 	@echo "Removing skills..."
 	@rm -rf $(SKILLS_DEST)/queue $(SKILLS_DEST)/queue-dev
-	@echo "Removing MCP server configs..."
+	@echo "Removing MCP server configs from ~/.claude.json..."
 	@if [ -f $(CLAUDE_SETTINGS) ]; then \
 		node -e '\
 			const fs = require("fs"); \
@@ -74,6 +74,20 @@ uninstall: ## Remove skills and MCP config (keeps database)
 				delete settings.mcpServers["claude-queue-dev"]; \
 				delete settings.mcpServers["claude-kanban-dev"]; \
 				fs.writeFileSync("$(CLAUDE_SETTINGS)", JSON.stringify(settings, null, 2)); \
+			} \
+		'; \
+	fi
+	@echo "Removing MCP server configs from ~/.claude/settings.json (legacy location)..."
+	@if [ -f $(HOME)/.claude/settings.json ]; then \
+		node -e '\
+			const fs = require("fs"); \
+			const settingsPath = "$(HOME)/.claude/settings.json"; \
+			const settings = JSON.parse(fs.readFileSync(settingsPath, "utf-8")); \
+			if (settings.mcpServers) { \
+				delete settings.mcpServers["claude-queue"]; \
+				delete settings.mcpServers["claude-queue-dev"]; \
+				delete settings.mcpServers["claude-kanban-dev"]; \
+				fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2)); \
 			} \
 		'; \
 	fi

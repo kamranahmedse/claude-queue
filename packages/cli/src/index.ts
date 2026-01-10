@@ -392,4 +392,29 @@ program
     }
   });
 
+program
+  .command("setup")
+  .description("Clean setup: remove existing config and reinstall fresh")
+  .action(async () => {
+    console.log("Cleaning existing configuration...");
+
+    const mcpRemoved = removeMcp();
+    if (mcpRemoved) {
+      console.log("  Removed old MCP config");
+    }
+
+    const skillsRemoved = removeSkills();
+    if (skillsRemoved) {
+      console.log("  Removed old skill files");
+    }
+
+    console.log("\nInstalling fresh configuration...");
+
+    await configureMcp();
+    installSkills(true);
+
+    console.log("\n✓ Setup complete!");
+    console.log("\nRestart Claude Code, then run: claude-queue");
+  });
+
 program.parse();

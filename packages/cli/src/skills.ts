@@ -1,20 +1,17 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { CLAUDE_DIR, SKILLS_DIR, DEFAULT_PORT } from "./constants.js";
+import { homedir } from "node:os";
+import { SKILLS_DIR, DEFAULT_PORT, MCP_SETTINGS_FILE } from "./constants.js";
+
+const LEGACY_SETTINGS_FILE = join(homedir(), ".claude", "settings.json");
 
 export async function configureMcp(): Promise<void> {
-  const settingsPath = join(CLAUDE_DIR, "settings.json");
-
-  if (!existsSync(CLAUDE_DIR)) {
-    mkdirSync(CLAUDE_DIR, { recursive: true });
-  }
-
   let settings: Record<string, unknown> = {};
-  if (existsSync(settingsPath)) {
+  if (existsSync(MCP_SETTINGS_FILE)) {
     try {
-      settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
+      settings = JSON.parse(readFileSync(MCP_SETTINGS_FILE, "utf-8"));
     } catch {
-      console.log("Warning: Could not parse existing settings.json");
+      console.log("Warning: Could not parse existing .claude.json");
     }
   }
 
@@ -22,6 +19,7 @@ export async function configureMcp(): Promise<void> {
 
   if (!mcpServers["claude-queue"]) {
     mcpServers["claude-queue"] = {
+      type: "stdio",
       command: "npx",
       args: ["-y", "-p", "claude-queue", "claude-queue-mcp"],
       env: {
@@ -29,8 +27,8 @@ export async function configureMcp(): Promise<void> {
       },
     };
     settings.mcpServers = mcpServers;
-    writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-    console.log("✓ Configured MCP server in ~/.claude/settings.json");
+    writeFileSync(MCP_SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    console.log("✓ Configured MCP server in ~/.claude.json");
   }
 }
 
@@ -73,29 +71,41 @@ export function installSkills(force = false): boolean {
 }
 
 export function removeMcp(): boolean {
-  const settingsPath = join(CLAUDE_DIR, "settings.json");
+  let removed = false;
 
-  if (!existsSync(settingsPath)) {
-    return false;
+  // Remove from ~/.claude.json (correct location)
+  if (existsSync(MCP_SETTINGS_FILE)) {
+    try {
+      const settings = JSON.parse(readFileSync(MCP_SETTINGS_FILE, "utf-8"));
+      const mcpServers = (settings.mcpServers as Record<string, unknown>) || {};
+      if (mcpServers["claude-queue"]) {
+        delete mcpServers["claude-queue"];
+        settings.mcpServers = mcpServers;
+        writeFileSync(MCP_SETTINGS_FILE, JSON.stringify(settings, null, 2));
+        removed = true;
+      }
+    } catch {
+      // Ignore parse errors
+    }
   }
 
-  let settings: Record<string, unknown> = {};
-  try {
-    settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
-  } catch {
-    return false;
+  // Also clean up legacy location ~/.claude/settings.json
+  if (existsSync(LEGACY_SETTINGS_FILE)) {
+    try {
+      const settings = JSON.parse(readFileSync(LEGACY_SETTINGS_FILE, "utf-8"));
+      const mcpServers = (settings.mcpServers as Record<string, unknown>) || {};
+      if (mcpServers["claude-queue"]) {
+        delete mcpServers["claude-queue"];
+        settings.mcpServers = mcpServers;
+        writeFileSync(LEGACY_SETTINGS_FILE, JSON.stringify(settings, null, 2));
+        removed = true;
+      }
+    } catch {
+      // Ignore parse errors
+    }
   }
 
-  const mcpServers = (settings.mcpServers as Record<string, unknown>) || {};
-
-  if (!mcpServers["claude-queue"]) {
-    return false;
-  }
-
-  delete mcpServers["claude-queue"];
-  settings.mcpServers = mcpServers;
-  writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-  return true;
+  return removed;
 }
 
 export function removeSkills(): boolean {

@@ -7,3 +7,4 @@ export const PID_FILE = join(KANBAN_DIR, "server.pid");
 export const LOG_FILE = join(KANBAN_DIR, "server.log");
 export const CLAUDE_DIR = join(homedir(), ".claude");
 export const SKILLS_DIR = join(CLAUDE_DIR, "skills");
+export const MCP_SETTINGS_FILE = join(homedir(), ".claude.json");
