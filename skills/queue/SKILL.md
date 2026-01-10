@@ -5,6 +5,8 @@ description: Watch the queue board and work through tasks autonomously. Use this
 
 # Queue Board
 
+**MCP Server:** Use the `claude-queue` MCP server for all queue tools in this skill.
+
 Work through tasks or plan new ones for a queue board.
 
 ## Argument Validation

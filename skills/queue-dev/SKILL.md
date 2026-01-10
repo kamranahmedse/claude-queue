@@ -5,6 +5,8 @@ description: Watch the queue board on the development server (port 3334) and wor
 
 # Queue Board (Development)
 
+**MCP Server:** Use the `claude-queue-dev` MCP server for all queue tools in this skill.
+
 Work through tasks or plan new ones for a queue board (DEVELOPMENT server on port 3334).
 
 ## Argument Validation

@@ -1,6 +1,6 @@
 {
   "name": "claude-queue",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "A local kanban board for managing Claude Code projects",
   "type": "module",
   "bin": {

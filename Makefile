@@ -72,6 +72,7 @@ uninstall: ## Remove skills and MCP config (keeps database)
 			if (settings.mcpServers) { \
 				delete settings.mcpServers["claude-queue"]; \
 				delete settings.mcpServers["claude-queue-dev"]; \
+				delete settings.mcpServers["claude-kanban-dev"]; \
 				fs.writeFileSync("$(CLAUDE_SETTINGS)", JSON.stringify(settings, null, 2)); \
 			} \
 		'; \
