@@ -11,7 +11,7 @@ npx claude-queue
 
 This starts the queue server and opens your board at `http://localhost:3333` with the empty project board.
 
-> On first run, it automatically configures the MCP server and installs the `/queue` skill. **Restart Claude Code after first run** to load the MCP server.
+> On every run, it automatically updates the `/queue` skill and MCP configuration. **Restart Claude Code after first run** to load the MCP server.
 
 Get the project ID/command from the top right of the web UI (e.g. `kbn-xxxx`). Then in Claude Code run:
 
@@ -75,27 +75,24 @@ Claude: ✓ Created 5 tasks in ready column
 claude-queue              # Start server (foreground)
 claude-queue --detach     # Start server (background)
 claude-queue status       # Check if server is running
-claude-queue stop         # Stop background server
+claude-queue stop         # Stop the server
+claude-queue restart      # Restart the server
 claude-queue list         # List all projects
 claude-queue doctor       # Diagnose and fix issues
+claude-queue upgrade      # Upgrade to latest version
 claude-queue uninstall    # Remove MCP and skill config
 claude-queue uninstall --all  # Also remove all data
 ```
 
 ## Upgrading
 
-The MCP server uses `npx -y` which automatically fetches the latest version. To upgrade:
-
-1. Stop the running server: `claude-queue stop`
-2. Clear npm cache (optional): `npm cache clean --force`
-3. Start again: `npx claude-queue`
-
-The skill file at `~/.claude/skills/queue/` is only written once. To update it, delete the folder and restart:
+To upgrade to the latest version:
 
 ```bash
-rm -rf ~/.claude/skills/queue
-npx claude-queue
+npx claude-queue upgrade
 ```
+
+This updates the npm package, reinstalls the `/queue` skill with the latest version, and refreshes the MCP configuration. Restart Claude Code after upgrading.
 
 ## Uninstalling
 

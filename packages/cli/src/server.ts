@@ -35,6 +35,20 @@ export function getRunningPid(): number | null {
   }
 }
 
+export function findServerPidByPort(port: number): number | null {
+  try {
+    const { execSync } = require("node:child_process");
+    const result = execSync(`lsof -ti tcp:${port}`, { encoding: "utf-8" }).trim();
+    if (result) {
+      const pids = result.split("\n").map((p: string) => parseInt(p.trim()));
+      return pids[0] || null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function savePid(pid: number): void {
   ensureKanbanDir();
   writeFileSync(PID_FILE, pid.toString());

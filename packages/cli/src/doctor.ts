@@ -53,7 +53,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
     }
   }
 
-  const skillPath = join(SKILLS_DIR, "kanban", "SKILL.md");
+  const skillPath = join(SKILLS_DIR, "queue", "SKILL.md");
   if (existsSync(skillPath)) {
     console.log("✅ /queue skill installed");
   } else {
@@ -72,7 +72,7 @@ export async function runDoctor(port: number, fix: boolean): Promise<void> {
     warnings++;
   }
 
-  const dbPath = join(KANBAN_DIR, "kanban.db");
+  const dbPath = join(KANBAN_DIR, "queue.db");
   if (existsSync(dbPath)) {
     const stats = await import("node:fs/promises").then((fs) => fs.stat(dbPath));
     const sizeMB = (stats.size / 1024 / 1024).toFixed(2);

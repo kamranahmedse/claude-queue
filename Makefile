@@ -1,4 +1,4 @@
-.PHONY: help install build dev setup clean build-package publish uninstall uninstall-legacy
+.PHONY: help install build dev setup clean build-package publish publish-patch publish-minor publish-major uninstall uninstall-legacy
 
 # Port for development
 DEV_PORT := 3334
@@ -100,9 +100,51 @@ uninstall-legacy: ## Remove old claude-board/kanban installations
 
 build-package: ## Build npm package for publishing
 	@echo "Building npm package..."
-	cd packages/cli && node scripts/build.js
+	cd packages/cli && node scripts/build.ts
 
 publish: build-package ## Publish to npm (requires npm login)
 	@echo "\nPublishing to npm..."
 	cd packages/cli && npm publish
 	@echo "\n✓ Published claude-queue to npm!"
+
+publish-patch: ## Bump patch version (x.x.X), build, and publish
+	@echo "Bumping patch version..."
+	cd packages/cli && npm version patch --no-git-tag-version
+	@VERSION=$$(node -p "require('./packages/cli/package.json').version"); \
+	echo "Building version $$VERSION..."; \
+	cd packages/cli && node scripts/build.ts; \
+	echo "\nPublishing to npm..."; \
+	cd packages/cli && npm publish; \
+	git add packages/cli/package.json; \
+	git commit -m "chore: release v$$VERSION"; \
+	git tag "v$$VERSION"; \
+	echo "\n✓ Published claude-queue v$$VERSION"; \
+	echo "  Run 'git push && git push --tags' to push the release"
+
+publish-minor: ## Bump minor version (x.X.0), build, and publish
+	@echo "Bumping minor version..."
+	cd packages/cli && npm version minor --no-git-tag-version
+	@VERSION=$$(node -p "require('./packages/cli/package.json').version"); \
+	echo "Building version $$VERSION..."; \
+	cd packages/cli && node scripts/build.ts; \
+	echo "\nPublishing to npm..."; \
+	cd packages/cli && npm publish; \
+	git add packages/cli/package.json; \
+	git commit -m "chore: release v$$VERSION"; \
+	git tag "v$$VERSION"; \
+	echo "\n✓ Published claude-queue v$$VERSION"; \
+	echo "  Run 'git push && git push --tags' to push the release"
+
+publish-major: ## Bump major version (X.0.0), build, and publish
+	@echo "Bumping major version..."
+	cd packages/cli && npm version major --no-git-tag-version
+	@VERSION=$$(node -p "require('./packages/cli/package.json').version"); \
+	echo "Building version $$VERSION..."; \
+	cd packages/cli && node scripts/build.ts; \
+	echo "\nPublishing to npm..."; \
+	cd packages/cli && npm publish; \
+	git add packages/cli/package.json; \
+	git commit -m "chore: release v$$VERSION"; \
+	git tag "v$$VERSION"; \
+	echo "\n✓ Published claude-queue v$$VERSION"; \
+	echo "  Run 'git push && git push --tags' to push the release"

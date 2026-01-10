@@ -48,12 +48,12 @@ function getSkillPath(): string {
   throw new Error("Skill file not found. Run 'pnpm build' first.");
 }
 
-export function installSkills(): void {
+export function installSkills(force = false): boolean {
   const queueSkillDir = join(SKILLS_DIR, "queue");
   const queueSkillFile = join(queueSkillDir, "SKILL.md");
 
-  if (existsSync(queueSkillFile)) {
-    return;
+  if (existsSync(queueSkillFile) && !force) {
+    return false;
   }
 
   if (!existsSync(SKILLS_DIR)) {
@@ -69,6 +69,7 @@ export function installSkills(): void {
 
   writeFileSync(queueSkillFile, skillContent);
   console.log("✓ Installed /queue skill to ~/.claude/skills/queue/");
+  return true;
 }
 
 export function removeMcp(): boolean {

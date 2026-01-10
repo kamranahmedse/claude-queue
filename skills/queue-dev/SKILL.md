@@ -105,9 +105,9 @@ Repeat continuously:
    - If `{ "deleted": true }` and NOT a git repo, just go to step 1 (changes cannot be auto-reverted)
    - If `{ "timeout": true }`, call `queue_wait_for_reply` again
 7. **Final check**: Before completing, call `queue_check_comments` one last time to ensure no new feedback was left during your work
-8. **Add summary** (REQUIRED): ALWAYS add a completion summary using `queue_add_comment` BEFORE calling complete. Example: "✅ Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
-9. **Complete**: Call `queue_complete_task` to move the task to Done (the comment from step 8 must already be added)
-10. **Commit** (git repos only): Commit changes after completing
+8. **Commit** (git repos only): Commit changes before marking the task as complete
+9. **Add summary** (REQUIRED): ALWAYS add a completion summary using `queue_add_comment` BEFORE calling complete. Example: "✅ Completed: Added X feature to Y component. Modified files: A.ts, B.tsx. Key changes: implemented Z logic."
+10. **Complete**: Call `queue_complete_task` to move the task to Done (the comment from step 9 must already be added)
 11. **Repeat** from step 1
 
 ## Rules
@@ -115,7 +115,7 @@ Repeat continuously:
 - Only work on ONE task at a time
 - Always update activity so user knows what you're doing
 - If task deleted while working and this is a git repo, discard all changes including commits with `git reset --hard <starting_commit>` (use the commit hash you passed when claiming)
-- Commit after completing a task (git repos only)
+- Commit before completing a task (git repos only), not after
 - If user asks to "defer" or "skip" a task, move it to **backlog** (not ready) so it won't be picked up again automatically
 
 ## Non-Git Directories

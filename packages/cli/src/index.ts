@@ -8,6 +8,7 @@ import {
   ensureKanbanDir,
   isServerRunning,
   getRunningPid,
+  findServerPidByPort,
   clearPid,
   startServer,
   waitForServer,
@@ -38,7 +39,7 @@ program
     ensureKanbanDir();
 
     await configureMcp();
-    installSkills();
+    installSkills(true);
 
     const running = await isServerRunning(port);
 
@@ -156,21 +157,80 @@ program
 
 program
   .command("stop")
-  .description("Stop the background server")
-  .action(async () => {
-    const pid = getRunningPid();
+  .description("Stop the server")
+  .option("-p, --port <port>", "Server port", DEFAULT_PORT.toString())
+  .action(async (options) => {
+    const port = parseInt(options.port);
+    let pid = getRunningPid();
 
     if (!pid) {
-      console.log("No background server running");
+      pid = findServerPidByPort(port);
+    }
+
+    if (!pid) {
+      console.log("No server running");
       return;
     }
 
     try {
       process.kill(pid, "SIGTERM");
       console.log(`Stopped server (PID: ${pid})`);
-      clearPid();
+      await clearPid();
     } catch (error) {
       console.error(`Failed to stop server: ${error}`);
+    }
+  });
+
+program
+  .command("restart")
+  .description("Restart the server")
+  .option("-p, --port <port>", "Server port", DEFAULT_PORT.toString())
+  .option("-d, --detach", "Run server in background")
+  .option("-v, --verbose", "Verbose output")
+  .action(async (options) => {
+    const port = parseInt(options.port);
+    const detach = options.detach || false;
+    const verbose = options.verbose || false;
+
+    let pid = getRunningPid();
+    if (!pid) {
+      pid = findServerPidByPort(port);
+    }
+
+    if (pid) {
+      console.log("Stopping server...");
+      try {
+        process.kill(pid, "SIGTERM");
+        await clearPid();
+        await new Promise((r) => setTimeout(r, 500));
+      } catch {
+        // Ignore errors if process already stopped
+      }
+    }
+
+    console.log("Starting server...");
+    ensureKanbanDir();
+    await configureMcp();
+    installSkills(true);
+
+    const child = await startServer(port, detach, verbose);
+    const serverReady = await waitForServer(port);
+
+    if (!serverReady) {
+      console.error("Server failed to start");
+      process.exit(1);
+    }
+
+    if (detach) {
+      console.log(`Server restarted on port ${port}`);
+    } else if (child) {
+      console.log(`Server running on port ${port}`);
+      console.log("Press Ctrl+C to stop");
+      process.on("SIGINT", () => {
+        child.kill();
+        process.exit(0);
+      });
+      await new Promise(() => {});
     }
   });
 
@@ -247,6 +307,43 @@ program
     const port = parseInt(options.port);
     const fix = options.fix || false;
     await runDoctor(port, fix);
+  });
+
+program
+  .command("upgrade")
+  .description("Upgrade claude-queue to the latest version")
+  .action(async () => {
+    console.log("\n🔄 Upgrading claude-queue...\n");
+
+    const { execSync } = await import("node:child_process");
+
+    console.log("Updating npm package...");
+    try {
+      execSync("npm install -g claude-queue@latest", { stdio: "inherit" });
+      console.log("✓ Package updated\n");
+    } catch {
+      console.log("⚠️  Could not update globally, trying npx cache clear...");
+      try {
+        execSync("npx --yes clear-npx-cache 2>/dev/null || true", { stdio: "ignore" });
+      } catch {
+        // Ignore cache clear errors
+      }
+    }
+
+    console.log("Updating skill files...");
+    const skillUpdated = installSkills(true);
+    if (skillUpdated) {
+      console.log("✓ Skills updated\n");
+    } else {
+      console.log("⚠️  Could not update skills\n");
+    }
+
+    console.log("Updating MCP configuration...");
+    await configureMcp();
+    console.log("");
+
+    console.log("✅ Upgrade complete!");
+    console.log("\nRestart Claude Code to use the new version.");
   });
 
 program
