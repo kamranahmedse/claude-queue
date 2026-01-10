@@ -1,6 +1,7 @@
 {
   "name": "claude-queue",
-  "version": "1.0.0",
+  "description": "Create a task queue for claude code to work autonomously.",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {

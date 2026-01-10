@@ -1,6 +1,8 @@
+import { type ReactNode } from "react";
+
 interface ConfirmDialogProps {
   title: string;
-  message: string | React.ReactNode;
+  message: string | ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   confirmVariant?: "danger" | "warning" | "default";

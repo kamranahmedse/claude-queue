@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type DragEvent } from "react";
 import { Plus, HelpCircle, LayoutTemplate, ChevronLeft } from "lucide-react";
 import type { Template, TaskStatus } from "~/types";
 import { TemplateCard } from "./template-card";
@@ -58,7 +58,7 @@ export function TemplateColumn(props: TemplateColumnProps) {
     localStorage.setItem(COLLAPSED_KEY, String(newValue));
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: DragEvent) => {
     if (!e.dataTransfer.types.includes(TEMPLATE_DRAG_TYPE)) {
       return;
     }
@@ -67,14 +67,14 @@ export function TemplateColumn(props: TemplateColumnProps) {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: DragEvent) => {
     if (e.currentTarget.contains(e.relatedTarget as Node)) {
       return;
     }
     setDropIndex(null);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setDropIndex(null);
     setDraggedTemplateId(null);
@@ -98,7 +98,7 @@ export function TemplateColumn(props: TemplateColumnProps) {
     onMoveTemplate(templateId, targetPosition);
   };
 
-  const handleTemplateDragStart = (e: React.DragEvent, template: Template) => {
+  const handleTemplateDragStart = (e: DragEvent, template: Template) => {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData(TEMPLATE_DRAG_TYPE, JSON.stringify({
       templateId: template.id,
@@ -114,7 +114,7 @@ export function TemplateColumn(props: TemplateColumnProps) {
     onDragEnd();
   };
 
-  const handleTopDropZoneDragOver = (e: React.DragEvent) => {
+  const handleTopDropZoneDragOver = (e: DragEvent) => {
     if (!e.dataTransfer.types.includes(TEMPLATE_DRAG_TYPE)) {
       return;
     }
@@ -127,7 +127,7 @@ export function TemplateColumn(props: TemplateColumnProps) {
     }
   };
 
-  const handleBottomDropZoneDragOver = (e: React.DragEvent) => {
+  const handleBottomDropZoneDragOver = (e: DragEvent) => {
     if (!e.dataTransfer.types.includes(TEMPLATE_DRAG_TYPE)) {
       return;
     }
@@ -141,7 +141,7 @@ export function TemplateColumn(props: TemplateColumnProps) {
     }
   };
 
-  const handleTemplateDragOver = (e: React.DragEvent, index: number) => {
+  const handleTemplateDragOver = (e: DragEvent, index: number) => {
     if (!e.dataTransfer.types.includes(TEMPLATE_DRAG_TYPE)) {
       return;
     }

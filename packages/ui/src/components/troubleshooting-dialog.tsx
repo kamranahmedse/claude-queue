@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { X, Activity, Puzzle, Server, AlertTriangle, CheckCircle, XCircle, Clock, ChevronDown, Wrench, Trash2, Database, RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { httpDelete, httpGet, httpPost } from "~/lib/http";
@@ -15,7 +15,7 @@ interface TroubleshootingDialogProps {
 
 type TabId = "status" | "skills" | "mcp" | "issues" | "actions";
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: "status", label: "Status", icon: <Activity className="w-4 h-4" /> },
   { id: "skills", label: "Skills", icon: <Puzzle className="w-4 h-4" /> },
   { id: "mcp", label: "MCP Server", icon: <Server className="w-4 h-4" /> },
@@ -306,7 +306,7 @@ interface MaintenanceStats {
 interface ActionButtonProps {
   label: string;
   description: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   variant: "danger" | "warning" | "info";
   onClick: () => void;
   disabled?: boolean;

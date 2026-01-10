@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Rocket, GitBranch, MessageCircle, Lightbulb, Inbox, CheckCircle2, Clock, CheckCheck, FileText, Keyboard } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { X, Rocket, GitBranch, MessageCircle, Lightbulb, Inbox, CheckCircle2, Clock, CheckCheck, FileText, Keyboard, ListTodo } from "lucide-react";
 import { CopyButton } from "./copy-button";
 import { useSkillCommand } from "~/hooks/use-skill-command";
 
@@ -8,10 +8,11 @@ interface HelpDialogProps {
   onClose: () => void;
 }
 
-type TabId = "overview" | "workflow" | "interaction" | "shortcuts" | "tips";
+type TabId = "overview" | "planning" | "workflow" | "interaction" | "shortcuts" | "tips";
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <Rocket className="w-4 h-4" /> },
+  { id: "planning", label: "Planning", icon: <ListTodo className="w-4 h-4" /> },
   { id: "workflow", label: "Workflow", icon: <GitBranch className="w-4 h-4" /> },
   { id: "interaction", label: "Interaction", icon: <MessageCircle className="w-4 h-4" /> },
   { id: "shortcuts", label: "Shortcuts", icon: <Keyboard className="w-4 h-4" /> },
@@ -60,6 +61,58 @@ function OverviewTab(props: OverviewTabProps) {
             Find your project ID in the URL or header
           </p>
         )}
+      </section>
+    </div>
+  );
+}
+
+interface PlanningTabProps {
+  projectId: string | null;
+  skillCommand: string;
+}
+
+function PlanningTab(props: PlanningTabProps) {
+  const { projectId, skillCommand } = props;
+  const planCommand = projectId ? `${skillCommand} plan ${projectId}` : `${skillCommand} plan <project-id>`;
+
+  return (
+    <div className="space-y-5">
+      <section>
+        <h3 className="text-sm font-medium text-zinc-200 mb-2">What is Planning Mode?</h3>
+        <p className="text-sm text-zinc-400 leading-relaxed">
+          Instead of manually creating tasks, describe what you want to build and let Claude
+          break it down into actionable tasks for you.
+        </p>
+      </section>
+
+      <section>
+        <h3 className="text-sm font-medium text-zinc-200 mb-3">How to Use</h3>
+        <ol className="space-y-4 text-sm text-zinc-400">
+          <li className="flex gap-3">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs font-medium">1</span>
+            <span>Run the planning command in Claude Code:</span>
+          </li>
+        </ol>
+        <div className="mt-3 ml-9 flex items-center gap-2 bg-zinc-800 rounded-lg border border-zinc-700">
+          <code className="flex-1 text-sm font-mono text-orange-400 px-3 py-2.5">
+            {planCommand}
+          </code>
+          <CopyButton text={planCommand} className="mr-2" />
+        </div>
+        <ol className="mt-4 space-y-4 text-sm text-zinc-400" start={2}>
+          <li className="flex gap-3">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs font-medium">2</span>
+            <span>Describe what you want to build (e.g., "user authentication with email and password")</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs font-medium">3</span>
+            <span>Claude proposes a task breakdown — refine if needed</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs font-medium">4</span>
+            <span>Choose to add tasks to <strong className="text-zinc-300">Ready</strong> (default) or <strong className="text-zinc-300">Backlog</strong></span>
+          </li>
+        </ol>
       </section>
     </div>
   );
@@ -256,6 +309,7 @@ export function HelpDialog(props: HelpDialogProps) {
 
           <div className="flex-1 p-4 overflow-y-auto min-h-[550px]">
             {activeTab === "overview" && <OverviewTab projectId={projectId} skillCommand={skillCommand} />}
+            {activeTab === "planning" && <PlanningTab projectId={projectId} skillCommand={skillCommand} />}
             {activeTab === "workflow" && <WorkflowTab />}
             {activeTab === "interaction" && <InteractionTab />}
             {activeTab === "shortcuts" && <ShortcutsTab />}

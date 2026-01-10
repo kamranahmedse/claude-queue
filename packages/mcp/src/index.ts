@@ -4,9 +4,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { handleWatch } from "./handlers/watch.ts";
 import { handleGetTasks, handleClaimTask, handleCompleteTask } from "./handlers/tasks.ts";
+import { handleCreateTask } from "./handlers/create-task.ts";
 import { handleUpdateActivity } from "./handlers/activity.ts";
 import { handleSetBlocked, handleWaitForReply } from "./handlers/blocking.ts";
 import { handleCheckComments, handleAddComment } from "./handlers/comments.ts";
+import { handleListProjects } from "./handlers/list-projects.ts";
 
 const server = new McpServer({
   name: "claude-queue",
@@ -51,6 +53,22 @@ server.registerTool(
   },
   async (args) => {
     return await handleClaimTask(args);
+  }
+);
+
+server.registerTool(
+  "queue_create_task",
+  {
+    description: "Create a new task in a project. Used during planning mode to add tasks to the queue.",
+    inputSchema: {
+      projectId: z.string().describe("Project ID (e.g., kbn-a3x9)"),
+      title: z.string().describe("Task title"),
+      description: z.string().optional().describe("Task description (optional)"),
+      status: z.enum(["backlog", "ready"]).optional().describe("Task status: 'backlog' or 'ready' (default: 'ready')"),
+    },
+  },
+  async (args) => {
+    return await handleCreateTask(args);
   }
 );
 
@@ -133,6 +151,17 @@ server.registerTool(
   },
   async (args) => {
     return await handleAddComment(args);
+  }
+);
+
+server.registerTool(
+  "queue_list_projects",
+  {
+    description: "List all available projects. Use this when no project ID is provided or when a project is not found.",
+    inputSchema: {},
+  },
+  async () => {
+    return await handleListProjects();
   }
 );
 

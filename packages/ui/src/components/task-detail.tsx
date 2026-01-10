@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Trash2, Bot, User, Send, Pencil, Eye, History, ChevronDown, Clock, CheckCheck, Inbox, CheckCircle2 } from "lucide-react";
 import { taskDetailsOptions, useAddComment, useDeleteComment, useDeleteTask, useUpdateTask, listTasksOptions } from "~/queries/tasks";
@@ -38,7 +38,7 @@ interface TaskDetailProps {
   onClose: () => void;
 }
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: React.ReactNode; className: string }> = {
+const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: ReactNode; className: string }> = {
   backlog: {
     label: "Backlog",
     icon: <Inbox className="w-3 h-3" />,
@@ -81,7 +81,7 @@ export function TaskDetail(props: TaskDetailProps) {
   const isInProgress = currentTask.status === "in_progress";
   const statusConfig = STATUS_CONFIG[currentTask.status];
 
-  const handleSubmitComment = (e: React.FormEvent) => {
+  const handleSubmitComment = (e: FormEvent) => {
     e.preventDefault();
     if (!comment.trim()) {
       return;

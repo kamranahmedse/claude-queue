@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { FileText, Trash2 } from "lucide-react";
 import { useDeleteTemplate } from "~/queries/templates";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -15,7 +15,7 @@ export function TemplateCard(props: TemplateCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteTemplate = useDeleteTemplate();
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: MouseEvent) => {
     e.stopPropagation();
     setShowDeleteConfirm(true);
   };

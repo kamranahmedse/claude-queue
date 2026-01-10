@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { Clock, Lock, RotateCcw, XCircle } from "lucide-react";
 import { useAddComment } from "~/queries/tasks";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -55,12 +55,12 @@ export function TaskCard(props: TaskCardProps) {
     : null;
   const addComment = useAddComment(task.id);
 
-  const handleResetClick = (e: React.MouseEvent) => {
+  const handleResetClick = (e: MouseEvent) => {
     e.stopPropagation();
     setShowResetConfirm(true);
   };
 
-  const handleCancelClick = (e: React.MouseEvent) => {
+  const handleCancelClick = (e: MouseEvent) => {
     e.stopPropagation();
     setShowCancelConfirm(true);
   };

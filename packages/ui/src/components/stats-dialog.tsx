@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Clock, CheckCircle, Calendar, TrendingUp, RefreshCw } from "lucide-react";
 import { httpGet } from "~/lib/http";
@@ -43,7 +44,7 @@ function formatDuration(ms: number): string {
 interface StatCardProps {
   label: string;
   value: string | number;
-  icon: React.ReactNode;
+  icon: ReactNode;
   subtitle?: string;
 }
 

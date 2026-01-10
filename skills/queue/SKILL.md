@@ -3,9 +3,77 @@ name: queue
 description: Watch the queue board and work through tasks autonomously. Use this when starting a coding session with the queue board.
 ---
 
-# Queue Board Watcher
+# Queue Board
 
-Watch the queue board and work through tasks autonomously.
+Work through tasks or plan new ones for a queue board.
+
+## Argument Validation
+
+FIRST, check the arguments passed to this skill:
+
+1. **If no arguments provided** (just `/queue` with nothing after):
+   - Call `queue_list_projects` to get available projects
+   - Display the result to the user and stop
+
+2. **If arguments start with `plan`** but no project ID after it (just `/queue plan`):
+   - Call `queue_list_projects` to get available projects
+   - Display: "Missing project ID. Available projects:" followed by the list
+   - Stop
+
+3. **If a project ID is provided**, proceed to Mode Detection below. If `queue_watch` fails with a "not found" error:
+   - Call `queue_list_projects` to get available projects
+   - Display: "Project not found. Available projects:" followed by the list
+   - Stop
+
+---
+
+## Mode Detection
+
+Check the arguments passed to this skill:
+- If arguments start with `plan` (e.g., `/queue plan kbn-xxxx`), follow **Planning Mode** below
+- Otherwise (e.g., `/queue kbn-xxxx`), follow **Work Mode** (Main Loop) below
+
+---
+
+## Planning Mode
+
+When invoked with `/queue plan <project-id>`:
+
+1. **Connect**: Call `queue_watch` with the project ID
+2. **Ask for input**: Ask the user "What would you like to plan?"
+3. **Generate tasks**: Based on the description, propose a breakdown:
+   - List each task with a title and brief description
+   - Keep tasks focused and actionable
+   - Order them logically (dependencies first if relevant)
+4. **Refine**: Ask if they want to adjust anything
+5. **Confirm destination**: Ask "Add to ready (default) or backlog?"
+6. **Create tasks**: Call `queue_create_task` for each task with the chosen status
+7. **Done**: Summarize what was created (count and column)
+
+### Example Planning Flow
+
+```
+User: /queue plan kbn-a3x9
+Claude: What would you like to plan?
+User: User authentication with email/password
+Claude: Here's my proposed breakdown:
+
+1. **Create auth database schema** - users table with email, password_hash, created_at
+2. **Implement registration endpoint** - POST /auth/register with validation
+3. **Implement login endpoint** - POST /auth/login returning JWT
+4. **Add auth middleware** - Verify JWT on protected routes
+5. **Create React auth context** - Login state and token management
+
+Want me to adjust anything? If not, should I add these to ready (default) or backlog?
+User: Looks good, add to ready
+Claude: ✓ Created 5 tasks in ready column for kbn-a3x9
+```
+
+---
+
+## Work Mode
+
+Work through tasks autonomously.
 
 ## Setup
 

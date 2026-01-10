@@ -30,6 +30,38 @@ Claude will start watching your board and work through tasks in the Ready column
 5. **When done**, Claude commits changes and moves the task to Done
 6. **Repeat** until no more Ready tasks
 
+## Planning Mode
+
+Instead of manually adding tasks, you can describe a feature and let Claude break it down into tasks:
+
+```
+/queue plan <project-id>
+```
+
+Claude will:
+1. Ask what you'd like to plan
+2. Propose a task breakdown based on your description
+3. Let you refine the tasks
+4. Ask whether to add them to Ready (default) or Backlog
+5. Create all tasks automatically
+
+Example:
+```
+You: /queue plan kbn-a3x9
+Claude: What would you like to plan?
+You: User authentication with email and password
+Claude: Here's my proposed breakdown:
+  1. Create auth database schema
+  2. Implement registration endpoint
+  3. Implement login endpoint
+  4. Add auth middleware
+  5. Create React auth context
+
+Want me to adjust anything? Add to ready (default) or backlog?
+You: Looks good
+Claude: ✓ Created 5 tasks in ready column
+```
+
 ## Features
 
 - **Sound notifications** — Audio alerts when tasks start, complete, or need attention (toggleable)

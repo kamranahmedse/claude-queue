@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, type ReactNode, type DragEvent } from "react";
 import { Trash2, HelpCircle, ChevronLeft, Inbox, CheckCircle2, Clock, CheckCheck, Plus } from "lucide-react";
 import { formatRelativeTime } from "~/hooks/use-relative-time";
 import type { Task, TaskStatus, Template } from "~/types";
@@ -8,7 +8,7 @@ import { ConfirmDialog } from "./confirm-dialog";
 const TASK_DRAG_TYPE = "application/x-task";
 const TEMPLATE_DRAG_TYPE = "application/x-template";
 
-const COLUMN_ICONS: Record<TaskStatus, React.ReactNode> = {
+const COLUMN_ICONS: Record<TaskStatus, ReactNode> = {
   backlog: <Inbox className="w-4 h-4" />,
   ready: <CheckCircle2 className="w-4 h-4" />,
   in_progress: <Clock className="w-4 h-4" />,
@@ -126,7 +126,7 @@ export function Column(props: ColumnProps) {
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: DragEvent) => {
     const isTaskDrag = e.dataTransfer.types.includes(TASK_DRAG_TYPE);
     const isTemplateDrag = e.dataTransfer.types.includes(TEMPLATE_DRAG_TYPE);
 
@@ -152,14 +152,14 @@ export function Column(props: ColumnProps) {
     }
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: DragEvent) => {
     if (e.currentTarget.contains(e.relatedTarget as Node)) {
       return;
     }
     setDropIndex(null);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setDropIndex(null);
     setDraggedTaskId(null);
@@ -194,7 +194,7 @@ export function Column(props: ColumnProps) {
     onMoveTask(taskId, id, targetPosition);
   };
 
-  const handleTaskDragStart = (e: React.DragEvent, task: Task) => {
+  const handleTaskDragStart = (e: DragEvent, task: Task) => {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData(TASK_DRAG_TYPE, JSON.stringify({ taskId: task.id }));
     setDraggedTaskId(task.id);
@@ -207,7 +207,7 @@ export function Column(props: ColumnProps) {
     onDragEnd();
   };
 
-  const handleTopDropZoneDragOver = (e: React.DragEvent) => {
+  const handleTopDropZoneDragOver = (e: DragEvent) => {
     if (!e.dataTransfer.types.includes(TASK_DRAG_TYPE)) {
       return;
     }
@@ -224,7 +224,7 @@ export function Column(props: ColumnProps) {
     }
   };
 
-  const handleBottomDropZoneDragOver = (e: React.DragEvent) => {
+  const handleBottomDropZoneDragOver = (e: DragEvent) => {
     if (!e.dataTransfer.types.includes(TASK_DRAG_TYPE)) {
       return;
     }
@@ -242,7 +242,7 @@ export function Column(props: ColumnProps) {
     }
   };
 
-  const handleTaskDragOver = (e: React.DragEvent, index: number) => {
+  const handleTaskDragOver = (e: DragEvent, index: number) => {
     if (!e.dataTransfer.types.includes(TASK_DRAG_TYPE)) {
       return;
     }

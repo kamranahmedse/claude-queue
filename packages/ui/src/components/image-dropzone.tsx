@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, type ChangeEvent, type DragEvent } from "react";
 import { Upload, X, FileImage } from "lucide-react";
 
 export interface PendingImage {
@@ -57,19 +57,19 @@ export function ImageDropzone(props: ImageDropzoneProps) {
     onImagesChange(images.filter((img) => img.id !== id));
   }, [images, onImagesChange, disabled]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();
     if (!disabled) {
       setIsDragging(true);
     }
   }, [disabled]);
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
 
@@ -128,7 +128,7 @@ export function ImageDropzone(props: ImageDropzoneProps) {
     };
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     if (disabled) {
       return;
     }

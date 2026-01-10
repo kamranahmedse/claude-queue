@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, FileText, Loader2, Settings2, Volume2, VolumeX } from "lucide-react";
 import { masterPromptOptions, projectPromptOptions, useUpdateMasterPrompt, useUpdateProjectPrompt } from "~/queries/prompts";
@@ -11,7 +11,7 @@ interface SettingsDialogProps {
 
 type TabId = "general" | "prompts";
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: "general", label: "General", icon: <Settings2 className="w-4 h-4" /> },
   { id: "prompts", label: "Prompts", icon: <FileText className="w-4 h-4" /> },
 ];

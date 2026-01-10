@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode, type ClipboardEvent, type FormEvent, type KeyboardEvent } from "react";
 import { ImageIcon } from "lucide-react";
 import { ImageDropzone, cleanupPendingImages, type PendingImage } from "./image-dropzone";
 
@@ -15,7 +15,7 @@ interface TaskTemplateFormProps {
   titlePlaceholder?: string;
   descriptionPlaceholder?: string;
   submitButtonClassName?: string;
-  headerContent?: React.ReactNode;
+  headerContent?: ReactNode;
 }
 
 export function TaskTemplateForm(props: TaskTemplateFormProps) {
@@ -66,7 +66,7 @@ export function TaskTemplateForm(props: TaskTemplateFormProps) {
     setImages((prev) => [...prev, ...newImages]);
   }, []);
 
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+  const handlePaste = useCallback((e: ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) {
       return;
@@ -88,7 +88,7 @@ export function TaskTemplateForm(props: TaskTemplateFormProps) {
     }
   }, [handleAddImageFiles]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       return;
@@ -97,7 +97,7 @@ export function TaskTemplateForm(props: TaskTemplateFormProps) {
     onSubmit(title.trim(), description.trim(), files);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       if (title.trim()) {

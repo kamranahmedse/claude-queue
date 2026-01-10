@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { X, ChevronDown, ImageIcon } from "lucide-react";
 import { TemplateImageUpload } from "./template-image-upload";
 import type { Template } from "~/types";
@@ -22,7 +22,7 @@ export function EditTemplateModal(props: EditTemplateModalProps) {
     setDescription(template.description || "");
   }, [template]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       return;
