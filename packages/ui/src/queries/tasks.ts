@@ -123,3 +123,21 @@ export function useDeleteComment(taskId: string) {
     },
   });
 }
+
+export function useForceResetTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      status = "backlog",
+    }: {
+      taskId: string;
+      status?: "ready" | "backlog";
+    }) => httpPost<Task>(`/tasks/${taskId}/force-reset`, { status }),
+    onSuccess: (task) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", task.project_id] });
+      queryClient.invalidateQueries({ queryKey: ["task", task.id] });
+    },
+  });
+}

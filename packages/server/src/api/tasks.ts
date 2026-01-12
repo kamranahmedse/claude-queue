@@ -252,6 +252,61 @@ router.post("/:id/move", (req, res) => {
   res.json(rowToTask(updated));
 });
 
+router.post("/:id/force-reset", (req, res) => {
+  const { status = "backlog" } = req.body;
+
+  if (status !== "ready" && status !== "backlog") {
+    res.status(400).json({ error: "status must be 'ready' or 'backlog'" });
+    return;
+  }
+
+  const db = getDb();
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow | undefined;
+
+  if (!task) {
+    res.status(404).json({ error: "Task not found" });
+    return;
+  }
+
+  if (task.status !== "in_progress") {
+    res.status(400).json({ error: "Can only force-reset tasks that are in progress" });
+    return;
+  }
+
+  const oldStatus = task.status;
+
+  db.transaction(() => {
+    db.prepare(`
+      UPDATE tasks SET position = position - 1
+      WHERE project_id = ? AND status = ? AND position > ?
+    `).run(task.project_id, oldStatus, task.position);
+
+    const maxPosition = db
+      .prepare("SELECT COALESCE(MAX(position), -1) as max FROM tasks WHERE project_id = ? AND status = ?")
+      .get(task.project_id, status) as { max: number };
+
+    const newPosition = maxPosition.max + 1;
+
+    db.prepare(`
+      UPDATE tasks
+      SET status = ?, position = ?, started_at = NULL, starting_commit = NULL,
+          current_activity = NULL, blocked = 0, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(status, newPosition, req.params.id);
+
+    db.prepare(`
+      UPDATE comments SET seen = 1
+      WHERE task_id = ? AND author = 'user' AND seen = 0
+      AND (content LIKE '%[ACTION:CANCEL]%' OR content LIKE '%[ACTION:RESET]%')
+    `).run(req.params.id);
+  })();
+
+  logTaskActivity(req.params.id, "status_change", oldStatus, status);
+
+  const updated = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow;
+  res.json(rowToTask(updated));
+});
+
 router.delete("/:id", (req, res) => {
   const db = getDb();
   const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id) as TaskRow | undefined;

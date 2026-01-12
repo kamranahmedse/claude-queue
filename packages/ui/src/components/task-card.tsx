@@ -1,6 +1,6 @@
-import { useState, type MouseEvent } from "react";
-import { Clock, Lock, Loader2, RotateCcw, XCircle } from "lucide-react";
-import { useAddComment } from "~/queries/tasks";
+import { useState, useRef, useEffect, type MouseEvent } from "react";
+import { Clock, Lock, Loader2, MoreVertical, RotateCcw, XCircle, Zap } from "lucide-react";
+import { useAddComment, useForceResetTask } from "~/queries/tasks";
 import { ConfirmDialog } from "./confirm-dialog";
 import { Tooltip } from "./tooltip";
 import type { Task } from "~/types";
@@ -47,6 +47,9 @@ export function TaskCard(props: TaskCardProps) {
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showForceResetConfirm, setShowForceResetConfirm] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isLocked = task.status === "in_progress";
   const isDone = task.status === "done";
@@ -54,15 +57,44 @@ export function TaskCard(props: TaskCardProps) {
     ? formatDuration(task.started_at, task.completed_at)
     : null;
   const addComment = useAddComment(task.id);
+  const forceReset = useForceResetTask();
+
+  useEffect(() => {
+    if (!showMenu) {
+      return;
+    }
+
+    function handleClickOutside(event: globalThis.MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMenu]);
+
+  const handleMenuClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(!showMenu);
+  };
 
   const handleResetClick = (e: MouseEvent) => {
     e.stopPropagation();
+    setShowMenu(false);
     setShowResetConfirm(true);
   };
 
   const handleCancelClick = (e: MouseEvent) => {
     e.stopPropagation();
+    setShowMenu(false);
     setShowCancelConfirm(true);
+  };
+
+  const handleForceResetClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    setShowForceResetConfirm(true);
   };
 
   const handleConfirmReset = () => {
@@ -79,6 +111,15 @@ export function TaskCard(props: TaskCardProps) {
       "[ACTION:CANCEL] Please stop working on this task and move it to backlog.",
       {
         onSuccess: () => setShowCancelConfirm(false),
+      },
+    );
+  };
+
+  const handleConfirmForceReset = () => {
+    forceReset.mutate(
+      { taskId: task.id, status: "backlog" },
+      {
+        onSuccess: () => setShowForceResetConfirm(false),
       },
     );
   };
@@ -147,25 +188,45 @@ export function TaskCard(props: TaskCardProps) {
           </div>
         )}
         {isLocked && !task.pending_action && (
-          <div className="mt-3 flex items-center gap-2 pt-2 border-t border-zinc-800">
-            <button
-              onClick={handleResetClick}
-              disabled={addComment.isPending}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20 rounded transition-colors"
-              title="Discard changes and start this task from scratch"
-            >
-              <RotateCcw className="w-3 h-3" />
-              Start Over
-            </button>
-            <button
-              onClick={handleCancelClick}
-              disabled={addComment.isPending}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors"
-              title="Stop work, discard changes, and return task to Ready"
-            >
-              <XCircle className="w-3 h-3" />
-              Abort Task
-            </button>
+          <div className="mt-3 flex items-center justify-end pt-2 border-t border-zinc-800">
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={handleMenuClick}
+                className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                title="Task actions"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 py-1">
+                  <button
+                    onClick={handleResetClick}
+                    disabled={addComment.isPending}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-yellow-400" />
+                    Start Over
+                  </button>
+                  <button
+                    onClick={handleCancelClick}
+                    disabled={addComment.isPending}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
+                  >
+                    <XCircle className="w-3.5 h-3.5 text-red-400" />
+                    Abort Task
+                  </button>
+                  <div className="my-1 border-t border-zinc-700" />
+                  <button
+                    onClick={handleForceResetClick}
+                    disabled={forceReset.isPending}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-orange-400" />
+                    Force Reset
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -209,6 +270,30 @@ export function TaskCard(props: TaskCardProps) {
           isLoading={addComment.isPending}
           onConfirm={handleConfirmCancel}
           onCancel={() => setShowCancelConfirm(false)}
+        />
+      )}
+
+      {showForceResetConfirm && (
+        <ConfirmDialog
+          title="Force Reset Task?"
+          message={
+            <div className="space-y-2">
+              <p>Use this when Claude has stopped responding. This will immediately:</p>
+              <ul className="list-disc list-inside text-zinc-500">
+                <li>Move the task back to Backlog</li>
+                <li>Clear the in-progress state</li>
+              </ul>
+              <p className="text-yellow-500 text-sm mt-2">
+                Note: This will NOT reset any code changes. You may need to manually run git reset if needed.
+              </p>
+            </div>
+          }
+          confirmLabel="Force Reset"
+          cancelLabel="Cancel"
+          confirmVariant="warning"
+          isLoading={forceReset.isPending}
+          onConfirm={handleConfirmForceReset}
+          onCancel={() => setShowForceResetConfirm(false)}
         />
       )}
     </>
