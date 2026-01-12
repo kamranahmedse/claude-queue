@@ -41,35 +41,25 @@ Check the arguments passed to this skill:
 
 When invoked with `/queue-dev plan <project-id>`:
 
-1. **Connect**: Call `queue_watch` with the project ID
-2. **Ask for input**: Ask the user "What would you like to plan?"
-3. **Generate tasks**: Based on the description, propose a breakdown:
-   - List each task with a title and brief description
-   - Keep tasks focused and actionable
-   - Order them logically (dependencies first if relevant)
-4. **Refine**: Ask if they want to adjust anything
-5. **Confirm destination**: Ask "Add to ready (default) or backlog?"
-6. **Create tasks**: Call `queue_create_task` for each task with the chosen status
-7. **Done**: Summarize what was created (count and column)
-
-### Example Planning Flow
-
-```
-User: /queue-dev plan kbn-a3x9
-Claude: What would you like to plan?
-User: User authentication with email/password
-Claude: Here's my proposed breakdown:
-
-1. **Create auth database schema** - users table with email, password_hash, created_at
-2. **Implement registration endpoint** - POST /auth/register with validation
-3. **Implement login endpoint** - POST /auth/login returning JWT
-4. **Add auth middleware** - Verify JWT on protected routes
-5. **Create React auth context** - Login state and token management
-
-Want me to adjust anything? If not, should I add these to ready (default) or backlog?
-User: Looks good, add to ready
-Claude: ✓ Created 5 tasks in ready column for kbn-a3x9
-```
+1. **Connect**: Call `queue_watch` with the project ID (ignore the "watching" message - that's for work mode)
+2. **Start discovery**: Immediately ask the user an open-ended question about what they're planning to work on. Let them explain freely.
+3. **Gather context**: After the user replies, read the project's CLAUDE.md file if it exists (at the project path) to understand any existing context
+4. **Iterative refinement**: Use the AskUserQuestion tool to ask targeted follow-up questions based on their initial response and any existing context. Keep asking until you have a clear understanding of:
+   - What they want to accomplish
+   - The scope and constraints
+   - What success looks like
+   - Any preferences or requirements
+5. **Propose the plan**: Present a comprehensive plan document capturing everything discussed. Ask if it captures their intent correctly.
+6. **Refine until approved**: If the user wants changes, refine the plan. Repeat until they're happy.
+7. **Create/update CLAUDE.md**: Once approved, write the plan to CLAUDE.md in the project directory. This provides context for all future sessions.
+8. **Set project prompt**: Call `queue_set_project_prompt` with a brief 1-2 sentence summary of what the project is about
+9. **Break into tasks**: Create focused, actionable tasks:
+   - Avoid overly broad tasks - each should be completable in a single session
+   - Include enough context in descriptions so the task can be understood without CLAUDE.md
+   - Mention relevant files or components when helpful
+10. **Ready to start?**: Ask "Ready to start? (or should I just add these to backlog for later?)"
+   - If user wants to start: Create tasks in "ready", then proceed to **Work Mode** and begin the main loop
+   - If user wants backlog: Create tasks in "backlog", inform them they can start later by running `/queue-dev <project-id>`
 
 ---
 

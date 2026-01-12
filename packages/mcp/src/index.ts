@@ -9,6 +9,7 @@ import { handleUpdateActivity } from "./handlers/activity.ts";
 import { handleSetBlocked, handleWaitForReply } from "./handlers/blocking.ts";
 import { handleCheckComments, handleAddComment } from "./handlers/comments.ts";
 import { handleListProjects } from "./handlers/list-projects.ts";
+import { handleSetProjectPrompt } from "./handlers/project-prompt.ts";
 
 const server = new McpServer({
   name: "claude-queue",
@@ -176,6 +177,20 @@ server.registerTool(
   },
   async () => {
     return await handleListProjects();
+  }
+);
+
+server.registerTool(
+  "queue_set_project_prompt",
+  {
+    description: "Set a brief project prompt (1-2 sentences) that provides context for all tasks. Used during planning to capture the project's purpose.",
+    inputSchema: {
+      projectId: z.string().describe("Project ID (e.g., kbn-a3x9)"),
+      prompt: z.string().max(300).describe("Brief project context (1-2 sentences, max 300 chars)"),
+    },
+  },
+  async (args) => {
+    return await handleSetProjectPrompt(args);
   }
 );
 

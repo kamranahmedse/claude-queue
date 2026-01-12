@@ -52,8 +52,12 @@ When invoked with `/queue plan <project-id>`:
 5. **Propose the plan**: Present a comprehensive plan document capturing everything discussed. Ask if it captures their intent correctly.
 6. **Refine until approved**: If the user wants changes, refine the plan. Repeat until they're happy.
 7. **Create/update CLAUDE.md**: Once approved, write the plan to CLAUDE.md in the project directory. This provides context for all future sessions.
-8. **Break into tasks**: Derive task titles and detailed descriptions from the plan
-9. **Ready to start?**: Ask "Ready to start? (or should I just add these to backlog for later?)"
+8. **Set project prompt**: Call `queue_set_project_prompt` with a brief 1-2 sentence summary of what the project is about
+9. **Break into tasks**: Create focused, actionable tasks:
+   - Avoid overly broad tasks - each should be completable in a single session
+   - Include enough context in descriptions so the task can be understood without CLAUDE.md
+   - Mention relevant files or components when helpful
+10. **Ready to start?**: Ask "Ready to start? (or should I just add these to backlog for later?)"
    - If user wants to start: Create tasks in "ready", then proceed to **Work Mode** and begin the main loop
    - If user wants backlog: Create tasks in "backlog", inform them they can start later by running `/queue <project-id>`
 
