@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { Clock, Lock, Loader2, MoreVertical, RotateCcw, XCircle, Zap } from "lucide-react";
 import { useAddComment, useForceResetTask } from "~/queries/tasks";
+import { formatRelativeTime } from "~/hooks/use-relative-time";
 import { ConfirmDialog } from "./confirm-dialog";
 import { Tooltip } from "./tooltip";
 import type { Task } from "~/types";
@@ -49,7 +51,9 @@ export function TaskCard(props: TaskCardProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showForceResetConfirm, setShowForceResetConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const isLocked = task.status === "in_progress";
   const isDone = task.status === "done";
@@ -65,7 +69,10 @@ export function TaskCard(props: TaskCardProps) {
     }
 
     function handleClickOutside(event: globalThis.MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedOutsideMenu = menuRef.current && !menuRef.current.contains(target);
+      const clickedOutsideButton = buttonRef.current && !buttonRef.current.contains(target);
+      if (clickedOutsideMenu && clickedOutsideButton) {
         setShowMenu(false);
       }
     }
@@ -76,6 +83,13 @@ export function TaskCard(props: TaskCardProps) {
 
   const handleMenuClick = (e: MouseEvent) => {
     e.stopPropagation();
+    if (!showMenu && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.right,
+      });
+    }
     setShowMenu(!showMenu);
   };
 
@@ -188,48 +202,64 @@ export function TaskCard(props: TaskCardProps) {
           </div>
         )}
         {isLocked && !task.pending_action && (
-          <div className="mt-3 flex items-center justify-end pt-2 border-t border-zinc-800">
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={handleMenuClick}
-                className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
-                title="Task actions"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              {showMenu && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 py-1">
-                  <button
-                    onClick={handleResetClick}
-                    disabled={addComment.isPending}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-yellow-400" />
-                    Start Over
-                  </button>
-                  <button
-                    onClick={handleCancelClick}
-                    disabled={addComment.isPending}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
-                  >
-                    <XCircle className="w-3.5 h-3.5 text-red-400" />
-                    Abort Task
-                  </button>
-                  <div className="my-1 border-t border-zinc-700" />
-                  <button
-                    onClick={handleForceResetClick}
-                    disabled={forceReset.isPending}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-orange-400" />
-                    Force Reset
-                  </button>
-                </div>
-              )}
-            </div>
+          <div className="mt-3 flex items-center justify-between pt-2 border-t border-zinc-800">
+            {task.started_at && (
+              <div className="flex items-center gap-1.5 text-zinc-500">
+                <Clock className="w-3 h-3" />
+                <span className="text-xs">{formatRelativeTime(task.started_at)}</span>
+              </div>
+            )}
+            <button
+              ref={buttonRef}
+              onClick={handleMenuClick}
+              className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors ml-auto"
+              title="Task actions"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>
+
+      {showMenu &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="fixed w-44 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-[9999] py-1"
+            style={{
+              top: menuPosition.top,
+              left: menuPosition.left,
+              transform: "translateX(-100%)",
+            }}
+          >
+            <button
+              onClick={handleResetClick}
+              disabled={addComment.isPending}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-yellow-400" />
+              Start Over
+            </button>
+            <button
+              onClick={handleCancelClick}
+              disabled={addComment.isPending}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
+            >
+              <XCircle className="w-3.5 h-3.5 text-red-400" />
+              Abort Task
+            </button>
+            <div className="my-1 border-t border-zinc-700" />
+            <button
+              onClick={handleForceResetClick}
+              disabled={forceReset.isPending}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
+            >
+              <Zap className="w-3.5 h-3.5 text-orange-400" />
+              Force Reset
+            </button>
+          </div>,
+          document.body
+        )}
 
       {showResetConfirm && (
         <ConfirmDialog
