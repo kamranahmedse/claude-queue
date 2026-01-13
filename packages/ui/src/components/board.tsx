@@ -118,8 +118,14 @@ function BoardContent(props: BoardContentProps) {
       done: [],
     };
 
+    if (!Array.isArray(tasks)) {
+      return grouped;
+    }
+
     for (const task of tasks) {
-      grouped[task.status].push(task);
+      if (task && task.status && grouped[task.status]) {
+        grouped[task.status].push(task);
+      }
     }
 
     for (const status of Object.keys(grouped) as TaskStatus[]) {
@@ -130,6 +136,9 @@ function BoardContent(props: BoardContentProps) {
   }, [tasks]);
 
   const sortedTemplates = useMemo(() => {
+    if (!Array.isArray(templates)) {
+      return [];
+    }
     return [...templates].sort((a, b) => a.position - b.position);
   }, [templates]);
 
