@@ -57,6 +57,7 @@ When invoked with `/queue plan <project-id>`:
    - Avoid overly broad tasks - each should be completable in a single session
    - Include enough context in descriptions so the task can be understood without CLAUDE.md
    - Mention relevant files or components when helpful
+   - **Every 7 tasks**, insert a task titled "Optimize CLAUDE.md" with this description: "Review and optimize the CLAUDE.md file to keep it concise and relevant. As implementation progresses, some planned sections become outdated or redundant. Keeping CLAUDE.md lean ensures Claude reads the most important context without hitting token limits, improving response quality and reducing confusion from stale information."
 10. **Ready to start?**: Ask "Ready to start? (or should I just add these to backlog for later?)"
    - If user wants to start: Create tasks in "ready", then proceed to **Work Mode** and begin the main loop
    - If user wants backlog: Create tasks in "backlog", inform them they can start later by running `/queue <project-id>`
