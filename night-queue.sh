@@ -295,6 +295,52 @@ Closes #${issue_number}" --quiet
     CURRENT_ISSUE=""
 }
 
+review_and_fix() {
+    log_header "Final Review & Fix Pass"
+
+    local review_log="${LOG_DIR}/review.md"
+
+    local prompt
+    prompt="You are doing a final review pass on automated code changes in this repository.
+
+Look at all uncommitted and recently committed changes on this branch. For each file that was modified:
+1. Read the full file
+2. Check for bugs, incomplete implementations, lazy code, missed edge cases, or style inconsistencies
+3. Fix anything you find
+
+Rules:
+- Do NOT create any git commits
+- Do NOT push anything
+- Only fix real problems, don't refactor for style preferences
+- Match the existing code style exactly
+
+When you are done, output a line that says NIGHT_QUEUE_REVIEW followed by a brief summary of what you fixed. If nothing needed fixing, say so."
+
+    # shellcheck disable=SC2086
+    claude -p "$prompt" \
+        --dangerously-skip-permissions \
+        --max-turns "$MAX_TURNS" \
+        $MODEL_FLAG \
+        > "$review_log" 2>&1 || true
+
+    local changed_files
+    changed_files=$(git diff --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null)
+
+    if [ -n "$changed_files" ]; then
+        log_success "Review pass made fixes:"
+        echo "$changed_files" | while IFS= read -r f; do
+            log "  ${f}"
+        done
+
+        git add -A
+        git commit -m "chore: final review pass
+
+Automated review and fixes by night-queue." --quiet
+    else
+        log "Review pass found nothing to fix"
+    fi
+}
+
 create_pr() {
     log_header "Creating Pull Request"
 
@@ -441,6 +487,7 @@ main() {
     done
 
     if [ ${#SOLVED_ISSUES[@]} -gt 0 ]; then
+        review_and_fix
         create_pr
     else
         log_warn "No issues were solved. No PR created."
