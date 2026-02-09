@@ -1,6 +1,6 @@
 {
   "name": "night-queue",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Automated overnight GitHub issue solver powered by Claude Code",
   "bin": {
     "night-queue": "./night-queue.sh"

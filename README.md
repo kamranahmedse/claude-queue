@@ -2,7 +2,7 @@
 
 Automated overnight GitHub issue solver. Run it before bed, wake up to a PR with fixes.
 
-night-queue fetches all open issues from your repo, uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to solve each one, and opens a pull request in the morning with everything — a summary of what was solved, what failed, and the full chain log.
+night-queue fetches all open issues from your repo, uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to solve each one, and opens a pull request with a summary of what was solved, what failed, and the full changelog.
 
 ## Prerequisites
 
