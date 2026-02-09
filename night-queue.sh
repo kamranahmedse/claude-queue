@@ -225,7 +225,11 @@ Rules:
 - Match the existing code style exactly
 - Only change what is necessary to solve the issue
 ${custom_instructions}
-When you are done, output a line that says NIGHT_QUEUE_SUMMARY followed by a 2-3 sentence
+If this issue does NOT require code changes (e.g. it's a question, a request for external action,
+a finding, or something that can't be solved with code), output a line that says NIGHT_QUEUE_NO_CODE
+followed by an explanation of what needs to be done instead.
+
+Otherwise, when you are done, output a line that says NIGHT_QUEUE_SUMMARY followed by a 2-3 sentence
 description of what you changed and why."
 
         local attempt_log="${LOG_DIR}/issue-${issue_number}-attempt-${attempt}.log"
@@ -243,6 +247,21 @@ description of what you changed and why."
             echo "**Claude exited with code ${claude_exit}**" >> "$issue_log"
             echo "" >> "$issue_log"
             continue
+        fi
+
+        local no_code_reason
+        no_code_reason=$(grep -A 20 "NIGHT_QUEUE_NO_CODE" "$attempt_log" 2>/dev/null | tail -n +2 | head -10 || echo "")
+
+        if [ -n "$no_code_reason" ]; then
+            log "Issue does not require code changes"
+            {
+                echo "### No Code Changes Required"
+                echo "$no_code_reason"
+                echo ""
+            } >> "$issue_log"
+            solved=true
+            log_success "Issue #${issue_number} handled (no code changes needed)"
+            break
         fi
 
         local changed_files
