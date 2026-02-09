@@ -1,8 +1,10 @@
 # claude-queue
 
-Automated GitHub issue solver. Queue up issues, let Claude Code solve them, wake up to a PR.
+Automated GitHub issue solver & creator. Create well-structured issues from a text dump or interactive interview, then let Claude Code solve them overnight.
 
-claude-queue fetches all open issues from your repo, uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to solve each one, and opens a pull request with a summary of what was solved, what failed, and the full changelog.
+claude-queue has two modes:
+- **Solve** (default) — fetches open issues, uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to solve each one, and opens a pull request
+- **Create** — decomposes a description into well-structured GitHub issues, either from inline text or via an interactive interview
 
 ## Prerequisites
 
@@ -24,13 +26,15 @@ npx claude-queue
 
 ## Usage
 
+### Solving issues
+
 Run from inside any git repository with GitHub issues:
 
 ```bash
 claude-queue
 ```
 
-### Options
+#### Solve options
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -40,7 +44,7 @@ claude-queue
 | `--model MODEL` | CLI default | Claude model to use (e.g. `claude-sonnet-4-5-20250929`) |
 | `-h, --help` | | Show help |
 
-### Examples
+#### Solve examples
 
 ```bash
 # Solve all open issues
@@ -51,6 +55,59 @@ claude-queue --label bug
 
 # Use a specific model with more retries
 claude-queue --max-retries 5 --model claude-sonnet-4-5-20250929
+```
+
+### Creating issues
+
+Generate well-structured GitHub issues from a text description or an interactive interview with Claude.
+
+```bash
+claude-queue create "Add dark mode and fix the login bug"
+```
+
+There are three ways to provide input:
+
+1. **Inline text** — pass your description as an argument
+2. **Stdin** — run `claude-queue create` with no arguments, type or paste your text, then press Ctrl+D
+3. **Interactive** — run `claude-queue create -i` and Claude will ask clarifying questions before generating issues
+
+In all modes, Claude decomposes the input into individual, actionable issues with titles, markdown bodies, and labels (reusing existing repo labels where possible). You get a preview before anything is created.
+
+#### Create options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-i, --interactive` | off | Interview mode — Claude asks clarifying questions first |
+| `--label LABEL` | none | Add this label to every created issue |
+| `--model MODEL` | CLI default | Claude model to use |
+| `-h, --help` | | Show help for create |
+
+#### Create examples
+
+```bash
+# Create issues from a text description
+claude-queue create "Add user avatars, implement search, and fix the 404 on /settings"
+
+# Interactive mode — Claude asks questions first
+claude-queue create -i
+
+# Paste a longer description via stdin
+claude-queue create
+
+# Add a label to all created issues (useful with --label on solve)
+claude-queue create --label backlog "Refactor the auth module and add rate limiting"
+```
+
+### Workflow: create then solve
+
+The `--label` flag on both commands lets you create a workflow where `create` plans the issues and bare `claude-queue` solves them:
+
+```bash
+# Plan: create issues tagged "nightshift"
+claude-queue create --label nightshift "Add dark mode and fix the login bug"
+
+# Solve: only process those issues
+claude-queue --label nightshift
 ```
 
 ## Configuration

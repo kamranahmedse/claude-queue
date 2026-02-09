@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 #
-# claude-queue - Automated GitHub issue solver
+# claude-queue - Automated GitHub issue solver & creator
 #
-# Fetches all open issues from the current repo, uses Claude Code CLI
-# to solve each one, and opens a PR in the morning with everything.
+# Commands:
+#   claude-queue [options]         Solve open issues (default)
+#   claude-queue create [options]  Create issues from text or interactively
 #
-# Usage:
-#   claude-queue [options]
-#
-# Options:
+# Solve options:
 #   --max-retries N    Max retries per issue (default: 3)
 #   --max-turns N      Max Claude turns per attempt (default: 50)
 #   --label LABEL      Only process issues with this label
 #   --model MODEL      Claude model to use
 #   -v, --version      Show version
 #   -h, --help         Show this help message
+#
+# Create options:
+#   -i, --interactive  Interview mode (Claude asks questions)
+#   --label LABEL      Add this label to all created issues
+#   --model MODEL      Claude model to use
+#   -h, --help         Show help for create
 
 set -euo pipefail
 
@@ -47,17 +51,38 @@ declare -a SKIPPED_ISSUES=()
 CURRENT_ISSUE=""
 START_TIME=$(date +%s)
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --max-retries) MAX_RETRIES="$2"; shift 2 ;;
-        --max-turns)   MAX_TURNS="$2";   shift 2 ;;
-        --label)       ISSUE_FILTER="$2"; shift 2 ;;
-        --model)       MODEL_FLAG="--model $2"; shift 2 ;;
-        -v|--version)  echo "claude-queue v${VERSION}"; exit 0 ;;
-        -h|--help)     head -16 "$0" | tail -14; exit 0 ;;
-        *)             echo "Unknown option: $1"; exit 1 ;;
-    esac
-done
+show_help() {
+    echo "claude-queue v${VERSION} — Automated GitHub issue solver & creator"
+    echo ""
+    echo "Usage:"
+    echo "  claude-queue [options]              Solve open issues (default)"
+    echo "  claude-queue create [options] [text] Create issues from text or interactively"
+    echo ""
+    echo "Solve options:"
+    echo "  --max-retries N    Max retries per issue (default: 3)"
+    echo "  --max-turns N      Max Claude turns per attempt (default: 50)"
+    echo "  --label LABEL      Only process issues with this label"
+    echo "  --model MODEL      Claude model to use"
+    echo "  -v, --version      Show version"
+    echo "  -h, --help         Show this help message"
+    echo ""
+    echo "Run 'claude-queue create --help' for create options."
+}
+
+show_create_help() {
+    echo "claude-queue create — Generate GitHub issues from text or an interactive interview"
+    echo ""
+    echo "Usage:"
+    echo "  claude-queue create \"description\"     Create issues from inline text"
+    echo "  claude-queue create                    Prompt for text input (Ctrl+D to finish)"
+    echo "  claude-queue create -i                 Interactive interview mode"
+    echo ""
+    echo "Options:"
+    echo "  -i, --interactive  Interview mode (Claude asks clarifying questions first)"
+    echo "  --label LABEL      Add this label to every created issue"
+    echo "  --model MODEL      Claude model to use"
+    echo "  -h, --help         Show this help message"
+}
 
 log()         { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${BLUE}[claude-queue]${NC} $1"; }
 log_success() { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${GREEN}[claude-queue]${NC} $1"; }
@@ -79,7 +104,9 @@ cleanup() {
         log_warn "Branch '${BRANCH}' has your commits. Push manually if needed."
     fi
 
-    log "Logs saved to: ${LOG_DIR}"
+    if [ -d "$LOG_DIR" ]; then
+        log "Logs saved to: ${LOG_DIR}"
+    fi
 }
 trap cleanup EXIT
 
@@ -536,4 +563,392 @@ main() {
     log "Logs: ${LOG_DIR}"
 }
 
-main "$@"
+create_preflight() {
+    log_header "Preflight Checks"
+
+    local failed=false
+
+    for cmd in gh claude jq; do
+        if command -v "$cmd" &>/dev/null; then
+            log "  $cmd ... found"
+        else
+            log_error "  $cmd ... NOT FOUND"
+            failed=true
+        fi
+    done
+
+    if ! gh auth status &>/dev/null; then
+        log_error "  gh auth ... not authenticated"
+        failed=true
+    else
+        log "  gh auth ... ok"
+    fi
+
+    if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+        log_error "  git repo ... not inside a git repository"
+        failed=true
+    else
+        log "  git repo ... ok"
+    fi
+
+    if [ "$failed" = true ]; then
+        log_error "Preflight failed. Aborting."
+        exit 1
+    fi
+}
+
+get_repo_labels() {
+    gh label list --json name -q '.[].name' 2>/dev/null | paste -sd ',' -
+}
+
+extract_json() {
+    local input="$1"
+    local json
+
+    json=$(echo "$input" | sed -n '/^```\(json\)\?$/,/^```$/{ /^```/d; p; }')
+    if [ -z "$json" ]; then
+        json="$input"
+    fi
+
+    if echo "$json" | jq empty 2>/dev/null; then
+        echo "$json"
+        return 0
+    fi
+
+    json=$(echo "$input" | grep -o '\[.*\]' | head -1)
+    if [ -n "$json" ] && echo "$json" | jq empty 2>/dev/null; then
+        echo "$json"
+        return 0
+    fi
+
+    return 1
+}
+
+create_from_text() {
+    local user_text="$1"
+    local repo_labels
+    repo_labels=$(get_repo_labels)
+
+    log "Analyzing text and generating issues..."
+
+    local prompt
+    prompt="You are a GitHub issue planner. The user wants to create issues for a repository.
+
+Existing labels in the repo: ${repo_labels}
+
+The user's description:
+${user_text}
+
+Decompose this into a JSON array of well-structured GitHub issues. Each issue should have:
+- \"title\": a clear, concise issue title
+- \"body\": a detailed issue body in markdown (include acceptance criteria where appropriate)
+- \"labels\": an array of label strings (reuse existing repo labels when they fit, or suggest new ones)
+
+Rules:
+- Create separate issues for logically distinct tasks
+- Each issue should be independently actionable
+- Use clear, imperative titles (e.g. \"Add dark mode toggle to settings page\")
+- If the description is vague, make reasonable assumptions and note them in the body
+
+Output ONLY the JSON array, no other text."
+
+    local output
+    # shellcheck disable=SC2086
+    output=$(claude -p "$prompt" $MODEL_FLAG 2>/dev/null)
+
+    local json
+    if ! json=$(extract_json "$output"); then
+        log_error "Failed to parse Claude's response as JSON"
+        log_error "Raw output:"
+        echo "$output"
+        exit 1
+    fi
+
+    local count
+    count=$(echo "$json" | jq length)
+    if [ "$count" -eq 0 ]; then
+        log_error "No issues were generated"
+        exit 1
+    fi
+
+    echo "$json"
+}
+
+create_interactive() {
+    local repo_labels
+    repo_labels=$(get_repo_labels)
+    local conversation=""
+    local max_turns=10
+    local turn=0
+
+    local system_prompt="You are a GitHub issue planner conducting an interview to understand what issues to create for a repository.
+
+Existing labels in the repo: ${repo_labels}
+
+Your job:
+1. Ask focused questions to understand what the user wants to build or fix
+2. Ask about priorities, scope, and acceptance criteria
+3. When you have enough information, output the marker CLAUDE_QUEUE_READY on its own line, followed by a JSON array of issues
+
+Each issue in the JSON array should have:
+- \"title\": a clear, concise issue title
+- \"body\": a detailed issue body in markdown
+- \"labels\": an array of label strings (reuse existing repo labels when they fit)
+
+Rules:
+- Ask one question at a time
+- Keep questions short and specific
+- After 2-3 questions you should have enough context — don't over-interview
+- If the user says \"done\", immediately generate the issues with what you know
+- Output ONLY your question text (no JSON) until you're ready to generate issues
+- When ready, output CLAUDE_QUEUE_READY on its own line followed by ONLY the JSON array"
+
+    echo -e "${BOLD}Interactive issue creation${NC}"
+    echo -e "${DIM}Answer Claude's questions. Type 'done' to generate issues at any time.${NC}"
+    echo ""
+
+    while [ "$turn" -lt "$max_turns" ]; do
+        turn=$((turn + 1))
+
+        local prompt
+        if [ -z "$conversation" ]; then
+            prompt="${system_prompt}
+
+Start by asking your first question."
+        else
+            prompt="${system_prompt}
+
+Conversation so far:
+${conversation}
+
+Continue the interview or, if you have enough information, output CLAUDE_QUEUE_READY followed by the JSON array."
+        fi
+
+        local output
+        # shellcheck disable=SC2086
+        output=$(claude -p "$prompt" $MODEL_FLAG 2>/dev/null)
+
+        if echo "$output" | grep -q "CLAUDE_QUEUE_READY"; then
+            local json_part
+            json_part=$(echo "$output" | sed -n '/CLAUDE_QUEUE_READY/,$ p' | tail -n +2)
+
+            local json
+            if ! json=$(extract_json "$json_part"); then
+                log_error "Failed to parse generated issues as JSON"
+                exit 1
+            fi
+
+            echo "$json"
+            return 0
+        fi
+
+        echo -e "${BLUE}Claude:${NC} ${output}"
+        echo ""
+
+        local user_input
+        read -r -p "You: " user_input
+
+        if [ "$user_input" = "done" ]; then
+            conversation="${conversation}
+Claude: ${output}
+User: Please generate the issues now with what you know."
+
+            local final_prompt="${system_prompt}
+
+Conversation so far:
+${conversation}
+
+The user wants you to generate the issues now. Output CLAUDE_QUEUE_READY followed by the JSON array."
+
+            local final_output
+            # shellcheck disable=SC2086
+            final_output=$(claude -p "$final_prompt" $MODEL_FLAG 2>/dev/null)
+
+            local final_json_part
+            final_json_part=$(echo "$final_output" | sed -n '/CLAUDE_QUEUE_READY/,$ p' | tail -n +2)
+            if [ -z "$final_json_part" ]; then
+                final_json_part="$final_output"
+            fi
+
+            local json
+            if ! json=$(extract_json "$final_json_part"); then
+                log_error "Failed to parse generated issues as JSON"
+                exit 1
+            fi
+
+            echo "$json"
+            return 0
+        fi
+
+        conversation="${conversation}
+Claude: ${output}
+User: ${user_input}"
+    done
+
+    log_warn "Reached maximum interview turns, generating issues with current information..."
+
+    local final_prompt="${system_prompt}
+
+Conversation so far:
+${conversation}
+
+You've reached the maximum number of questions. Output CLAUDE_QUEUE_READY followed by the JSON array now."
+
+    local final_output
+    # shellcheck disable=SC2086
+    final_output=$(claude -p "$final_prompt" $MODEL_FLAG 2>/dev/null)
+
+    local final_json_part
+    final_json_part=$(echo "$final_output" | sed -n '/CLAUDE_QUEUE_READY/,$ p' | tail -n +2)
+    if [ -z "$final_json_part" ]; then
+        final_json_part="$final_output"
+    fi
+
+    local json
+    if ! json=$(extract_json "$final_json_part"); then
+        log_error "Failed to parse generated issues as JSON"
+        exit 1
+    fi
+
+    echo "$json"
+}
+
+preview_issues() {
+    local json="$1"
+    local count
+    count=$(echo "$json" | jq length)
+
+    echo ""
+    echo -e "${BOLD}═══ Issue Preview ═══${NC}"
+    echo ""
+
+    for i in $(seq 0 $((count - 1))); do
+        local title labels body
+        title=$(echo "$json" | jq -r ".[$i].title")
+        labels=$(echo "$json" | jq -r ".[$i].labels // [] | join(\", \")")
+        body=$(echo "$json" | jq -r ".[$i].body" | head -3)
+
+        echo -e "  ${BOLD}$((i + 1)). ${title}${NC}"
+        if [ -n "$labels" ]; then
+            echo -e "     ${DIM}Labels: ${labels}${NC}"
+        fi
+        echo -e "     ${DIM}$(echo "$body" | head -1)${NC}"
+        echo ""
+    done
+}
+
+confirm_and_create() {
+    local json="$1"
+    local extra_label="$2"
+    local count
+    count=$(echo "$json" | jq length)
+
+    local prompt_text="Create ${count} issue(s)? [y/N] "
+    read -r -p "$prompt_text" confirm
+
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        log "Cancelled."
+        exit 0
+    fi
+
+    echo ""
+
+    for i in $(seq 0 $((count - 1))); do
+        local title body
+        title=$(echo "$json" | jq -r ".[$i].title")
+        body=$(echo "$json" | jq -r ".[$i].body")
+
+        local label_args=()
+        local issue_labels
+        issue_labels=$(echo "$json" | jq -r ".[$i].labels // [] | .[]")
+        while IFS= read -r lbl; do
+            if [ -n "$lbl" ]; then
+                label_args+=(--label "$lbl")
+            fi
+        done <<< "$issue_labels"
+
+        if [ -n "$extra_label" ]; then
+            label_args+=(--label "$extra_label")
+        fi
+
+        local issue_url
+        issue_url=$(gh issue create --title "$title" --body "$body" "${label_args[@]}" 2>&1)
+        log_success "Created: ${issue_url}"
+    done
+
+    echo ""
+    log_success "Created ${count} issue(s)"
+}
+
+cmd_create() {
+    local interactive=false
+    local extra_label=""
+    local user_text=""
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -i|--interactive) interactive=true; shift ;;
+            --label)          extra_label="$2"; shift 2 ;;
+            --model)          MODEL_FLAG="--model $2"; shift 2 ;;
+            -h|--help)        show_create_help; exit 0 ;;
+            -*)               echo "Unknown option: $1"; echo ""; show_create_help; exit 1 ;;
+            *)                user_text="$1"; shift ;;
+        esac
+    done
+
+    create_preflight
+
+    local json
+
+    if [ "$interactive" = true ]; then
+        json=$(create_interactive)
+    elif [ -n "$user_text" ]; then
+        json=$(create_from_text "$user_text")
+    else
+        echo -e "${BOLD}Describe what issues you want to create.${NC}"
+        echo -e "${DIM}Type or paste your text, then press Ctrl+D when done.${NC}"
+        echo ""
+        user_text=$(cat)
+        if [ -z "$user_text" ]; then
+            log_error "No input provided"
+            exit 1
+        fi
+        json=$(create_from_text "$user_text")
+    fi
+
+    preview_issues "$json"
+    confirm_and_create "$json" "$extra_label"
+}
+
+# --- Subcommand routing ---
+
+SUBCOMMAND=""
+if [[ $# -gt 0 ]] && [[ "$1" != -* ]]; then
+    SUBCOMMAND="$1"; shift
+fi
+
+case "$SUBCOMMAND" in
+    "")
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --max-retries) MAX_RETRIES="$2"; shift 2 ;;
+                --max-turns)   MAX_TURNS="$2";   shift 2 ;;
+                --label)       ISSUE_FILTER="$2"; shift 2 ;;
+                --model)       MODEL_FLAG="--model $2"; shift 2 ;;
+                -v|--version)  echo "claude-queue v${VERSION}"; exit 0 ;;
+                -h|--help)     show_help; exit 0 ;;
+                *)             echo "Unknown option: $1"; exit 1 ;;
+            esac
+        done
+        main
+        ;;
+    create)
+        cmd_create "$@"
+        ;;
+    *)
+        echo "Unknown command: $SUBCOMMAND"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac
