@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# night-queue - Automated overnight GitHub issue solver
+# claude-queue - Automated GitHub issue solver
 #
 # Fetches all open issues from the current repo, uses Claude Code CLI
 # to solve each one, and opens a PR in the morning with everything.
 #
 # Usage:
-#   night-queue [options]
+#   claude-queue [options]
 #
 # Options:
 #   --max-retries N    Max retries per issue (default: 3)
@@ -26,12 +26,12 @@ ISSUE_FILTER=""
 MODEL_FLAG=""
 DATE=$(date +%Y-%m-%d)
 TIMESTAMP=$(date +%H%M%S)
-BRANCH="night-queue/${DATE}"
-LOG_DIR="/tmp/night-queue-${DATE}-${TIMESTAMP}"
+BRANCH="claude-queue/${DATE}"
+LOG_DIR="/tmp/claude-queue-${DATE}-${TIMESTAMP}"
 
-LABEL_PROGRESS="night-queue:in-progress"
-LABEL_SOLVED="night-queue:solved"
-LABEL_FAILED="night-queue:failed"
+LABEL_PROGRESS="claude-queue:in-progress"
+LABEL_SOLVED="claude-queue:solved"
+LABEL_FAILED="claude-queue:failed"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -53,16 +53,16 @@ while [[ $# -gt 0 ]]; do
         --max-turns)   MAX_TURNS="$2";   shift 2 ;;
         --label)       ISSUE_FILTER="$2"; shift 2 ;;
         --model)       MODEL_FLAG="--model $2"; shift 2 ;;
-        -v|--version)  echo "night-queue v${VERSION}"; exit 0 ;;
+        -v|--version)  echo "claude-queue v${VERSION}"; exit 0 ;;
         -h|--help)     head -16 "$0" | tail -14; exit 0 ;;
         *)             echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 
-log()         { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${BLUE}[night-queue]${NC} $1"; }
-log_success() { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${GREEN}[night-queue]${NC} $1"; }
-log_warn()    { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${YELLOW}[night-queue]${NC} $1"; }
-log_error()   { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${RED}[night-queue]${NC} $1"; }
+log()         { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${BLUE}[claude-queue]${NC} $1"; }
+log_success() { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${GREEN}[claude-queue]${NC} $1"; }
+log_warn()    { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${YELLOW}[claude-queue]${NC} $1"; }
+log_error()   { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${RED}[claude-queue]${NC} $1"; }
 log_header()  { echo -e "\n${BOLD}═══ $1 ═══${NC}\n"; }
 
 cleanup() {
@@ -130,9 +130,9 @@ preflight() {
 ensure_labels() {
     log "Creating labels (if missing)..."
 
-    gh label create "$LABEL_PROGRESS" --color "fbca04" --description "night-queue is working on this"  --force 2>/dev/null || true
-    gh label create "$LABEL_SOLVED"   --color "0e8a16" --description "Solved by night-queue"           --force 2>/dev/null || true
-    gh label create "$LABEL_FAILED"   --color "d93f0b" --description "night-queue could not solve this" --force 2>/dev/null || true
+    gh label create "$LABEL_PROGRESS" --color "fbca04" --description "claude-queue is working on this"  --force 2>/dev/null || true
+    gh label create "$LABEL_SOLVED"   --color "0e8a16" --description "Solved by claude-queue"           --force 2>/dev/null || true
+    gh label create "$LABEL_FAILED"   --color "d93f0b" --description "claude-queue could not solve this" --force 2>/dev/null || true
 }
 
 setup_branch() {
@@ -200,11 +200,11 @@ process_issue() {
         echo "" >> "$issue_log"
 
         local custom_instructions=""
-        if [ -f ".night-queue" ]; then
+        if [ -f ".claude-queue" ]; then
             custom_instructions="
 
 Additional project-specific instructions:
-$(cat .night-queue)"
+$(cat .claude-queue)"
         fi
 
         local prompt
@@ -226,10 +226,10 @@ Rules:
 - Only change what is necessary to solve the issue
 ${custom_instructions}
 If this issue does NOT require code changes (e.g. it's a question, a request for external action,
-a finding, or something that can't be solved with code), output a line that says NIGHT_QUEUE_NO_CODE
+a finding, or something that can't be solved with code), output a line that says CLAUDE_QUEUE_NO_CODE
 followed by an explanation of what needs to be done instead.
 
-Otherwise, when you are done, output a line that says NIGHT_QUEUE_SUMMARY followed by a 2-3 sentence
+Otherwise, when you are done, output a line that says CLAUDE_QUEUE_SUMMARY followed by a 2-3 sentence
 description of what you changed and why."
 
         local attempt_log="${LOG_DIR}/issue-${issue_number}-attempt-${attempt}.log"
@@ -250,7 +250,7 @@ description of what you changed and why."
         fi
 
         local no_code_reason
-        no_code_reason=$(grep -A 20 "NIGHT_QUEUE_NO_CODE" "$attempt_log" 2>/dev/null | tail -n +2 | head -10 || echo "")
+        no_code_reason=$(grep -A 20 "CLAUDE_QUEUE_NO_CODE" "$attempt_log" 2>/dev/null | tail -n +2 | head -10 || echo "")
 
         if [ -n "$no_code_reason" ]; then
             log "Issue does not require code changes"
@@ -280,7 +280,7 @@ description of what you changed and why."
         done
 
         local summary
-        summary=$(grep -A 20 "NIGHT_QUEUE_SUMMARY" "$attempt_log" 2>/dev/null | tail -n +2 | head -10 || echo "No summary provided.")
+        summary=$(grep -A 20 "CLAUDE_QUEUE_SUMMARY" "$attempt_log" 2>/dev/null | tail -n +2 | head -10 || echo "No summary provided.")
 
         {
             echo "### Summary"
@@ -294,7 +294,7 @@ description of what you changed and why."
         git add -A
         git commit -m "fix: resolve #${issue_number} - ${issue_title}
 
-Automated fix by night-queue.
+Automated fix by claude-queue.
 Closes #${issue_number}" --quiet
 
         solved=true
@@ -315,7 +315,7 @@ Closes #${issue_number}" --quiet
         SOLVED_ISSUES+=("${issue_number}|${issue_title}")
     else
         gh issue edit "$issue_number" --add-label "$LABEL_FAILED"
-        gh issue comment "$issue_number" --body "night-queue failed to solve this issue after ${MAX_RETRIES} attempts." 2>/dev/null || true
+        gh issue comment "$issue_number" --body "claude-queue failed to solve this issue after ${MAX_RETRIES} attempts." 2>/dev/null || true
         FAILED_ISSUES+=("${issue_number}|${issue_title}")
         git reset --hard "$checkpoint" --quiet 2>/dev/null || true
         git clean -fd --quiet 2>/dev/null || true
@@ -343,7 +343,7 @@ Rules:
 - Only fix real problems, don't refactor for style preferences
 - Match the existing code style exactly
 
-When you are done, output a line that says NIGHT_QUEUE_REVIEW followed by a brief summary of what you fixed. If nothing needed fixing, say so."
+When you are done, output a line that says CLAUDE_QUEUE_REVIEW followed by a brief summary of what you fixed. If nothing needed fixing, say so."
 
     # shellcheck disable=SC2086
     claude -p "$prompt" \
@@ -364,7 +364,7 @@ When you are done, output a line that says NIGHT_QUEUE_REVIEW followed by a brie
         git add -A
         git commit -m "chore: final review pass
 
-Automated review and fixes by night-queue." --quiet
+Automated review and fixes by claude-queue." --quiet
     else
         log "Review pass found nothing to fix"
     fi
@@ -382,7 +382,7 @@ create_pr() {
     local total_processed=$(( ${#SOLVED_ISSUES[@]} + ${#FAILED_ISSUES[@]} ))
 
     {
-        echo "## night-queue Run Summary"
+        echo "## claude-queue Run Summary"
         echo ""
         echo "| Metric | Value |"
         echo "|--------|-------|"
@@ -464,7 +464,7 @@ create_pr() {
     pr_url=$(gh pr create \
         --base "$default_branch" \
         --head "$BRANCH" \
-        --title "night-queue: Automated fixes (${DATE})" \
+        --title "claude-queue: Automated fixes (${DATE})" \
         --body-file "$pr_body")
 
     log_success "Pull request created: ${pr_url}"
@@ -472,14 +472,14 @@ create_pr() {
 
 main() {
     echo -e "${BOLD}"
-    echo '        _       _     _                                  '
-    echo '  _ __ (_) __ _| |__ | |_       __ _ _   _  ___ _   _  ___'
-    echo ' | '"'"'_ \| |/ _` | '"'"'_ \| __| ___/ _` | | | |/ _ \ | | |/ _ \'
-    echo ' | | | | | (_| | | | | |_|___| (_| | |_| |  __/ |_| |  __/'
-    echo ' |_| |_|_|\__, |_| |_|\__|    \__, |\__,_|\___|\__,_|\___|'
-    echo '          |___/                   |_|                     '
+    echo '       _                 _                                  '
+    echo '   ___| | __ _ _   _  __| | ___        __ _ _   _  ___ _   _  ___'
+    echo '  / __| |/ _` | | | |/ _` |/ _ \_____ / _` | | | |/ _ \ | | |/ _ \'
+    echo ' | (__| | (_| | |_| | (_| |  __/_____| (_| | |_| |  __/ |_| |  __/'
+    echo '  \___|_|\__,_|\__,_|\__,_|\___|      \__, |\__,_|\___|\__,_|\___|'
+    echo '                                         |_|                      '
     echo -e "${NC}"
-    echo -e "  ${DIM}Automated overnight issue solver${NC}"
+    echo -e "  ${DIM}Automated GitHub issue solver${NC}"
     echo ""
 
     preflight
@@ -506,8 +506,8 @@ main() {
         title=$(echo "$issues" | jq -r ".[$i].title")
         labels=$(echo "$issues" | jq -r "[.[$i].labels[].name] | join(\",\")" 2>/dev/null || echo "")
 
-        if echo "$labels" | grep -q "night-queue:"; then
-            log "Skipping #${number} (already has a night-queue label)"
+        if echo "$labels" | grep -q "claude-queue:"; then
+            log "Skipping #${number} (already has a claude-queue label)"
             SKIPPED_ISSUES+=("${number}|${title}")
             continue
         fi
@@ -522,7 +522,7 @@ main() {
         log_warn "No issues were solved. No PR created."
     fi
 
-    log_header "night-queue Complete"
+    log_header "claude-queue Complete"
 
     local elapsed=$(( $(date +%s) - START_TIME ))
     log "Duration: $(( elapsed / 3600 ))h $(( (elapsed % 3600) / 60 ))m $(( elapsed % 60 ))s"

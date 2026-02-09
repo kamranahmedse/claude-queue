@@ -1,8 +1,8 @@
-# night-queue
+# claude-queue
 
-Automated overnight GitHub issue solver. Run it before bed, wake up to a PR with fixes.
+Automated GitHub issue solver. Queue up issues, let Claude Code solve them, wake up to a PR.
 
-night-queue fetches all open issues from your repo, uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to solve each one, and opens a pull request with a summary of what was solved, what failed, and the full changelog.
+claude-queue fetches all open issues from your repo, uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to solve each one, and opens a pull request with a summary of what was solved, what failed, and the full changelog.
 
 ## Prerequisites
 
@@ -13,13 +13,13 @@ night-queue fetches all open issues from your repo, uses [Claude Code](https://d
 ## Install
 
 ```bash
-npm install -g night-queue
+npm install -g claude-queue
 ```
 
 Or run directly with npx:
 
 ```bash
-npx night-queue
+npx claude-queue
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ npx night-queue
 Run from inside any git repository with GitHub issues:
 
 ```bash
-night-queue
+claude-queue
 ```
 
 ### Options
@@ -44,18 +44,18 @@ night-queue
 
 ```bash
 # Solve all open issues
-night-queue
+claude-queue
 
 # Only solve issues labeled "bug"
-night-queue --label bug
+claude-queue --label bug
 
 # Use a specific model with more retries
-night-queue --max-retries 5 --model claude-sonnet-4-5-20250929
+claude-queue --max-retries 5 --model claude-sonnet-4-5-20250929
 ```
 
 ## Configuration
 
-Create a `.night-queue` file in your repo root to add custom instructions to every issue prompt:
+Create a `.claude-queue` file in your repo root to add custom instructions to every issue prompt:
 
 ```
 Always run `npm test` after making changes.
@@ -77,22 +77,22 @@ Creates three labels on the repo (skips if they already exist):
 
 | Label | Color | Meaning |
 |-------|-------|---------|
-| `night-queue:in-progress` | Yellow | Currently being worked on |
-| `night-queue:solved` | Green | Successfully fixed |
-| `night-queue:failed` | Red | Could not be solved after all retries |
+| `claude-queue:in-progress` | Yellow | Currently being worked on |
+| `claude-queue:solved` | Green | Successfully fixed |
+| `claude-queue:failed` | Red | Could not be solved after all retries |
 
 These labels let you see at a glance which issues were handled and what the outcome was.
 
 ### 3. Branch
 
-Creates a single branch `night-queue/YYYY-MM-DD` off your default branch. All fixes for the night go into this one branch. If the branch already exists (e.g. from a previous run), a timestamp suffix is added.
+Creates a single branch `claude-queue/YYYY-MM-DD` off your default branch. All fixes for the night go into this one branch. If the branch already exists (e.g. from a previous run), a timestamp suffix is added.
 
 ### 4. Issue Processing
 
 For each open issue (up to 200, oldest first):
 
-- **Skip check** — issues that already have any `night-queue:*` label are skipped. Remove the label to re-process.
-- **Label** — marks the issue `night-queue:in-progress`
+- **Skip check** — issues that already have any `claude-queue:*` label are skipped. Remove the label to re-process.
+- **Label** — marks the issue `claude-queue:in-progress`
 - **Solve** — launches a fresh Claude Code process (`claude -p`) with a prompt that tells it to:
   - Read the issue via `gh issue view`
   - Explore the codebase
@@ -100,7 +100,7 @@ For each open issue (up to 200, oldest first):
   - Run existing tests
 - **Evaluate** — if Claude produced file changes, they are committed. If not, the attempt is retried.
 - **Retry** — on failure, the working tree is reset to the last checkpoint (`git reset --hard`) and Claude gets a completely fresh context. Up to 3 attempts per issue (configurable with `--max-retries`).
-- **Label result** — marks the issue `night-queue:solved` or `night-queue:failed`
+- **Label result** — marks the issue `claude-queue:solved` or `claude-queue:failed`
 
 Each issue is solved sequentially so later fixes build on top of earlier ones — all in a single branch.
 
@@ -118,16 +118,16 @@ If no issues were solved, no PR is created.
 ### Interruption Handling
 
 If the script is interrupted (Ctrl+C, SIGTERM), it:
-- Removes the `night-queue:in-progress` label from the current issue
-- Marks it as `night-queue:failed`
+- Removes the `claude-queue:in-progress` label from the current issue
+- Marks it as `claude-queue:failed`
 - Prints where your commits and logs are so nothing is lost
 
 ## Logs
 
-Full logs for each run are saved to `/tmp/night-queue-DATE-TIMESTAMP/`:
+Full logs for each run are saved to `/tmp/claude-queue-DATE-TIMESTAMP/`:
 
 ```
-/tmp/night-queue-2025-03-15-220530/
+/tmp/claude-queue-2025-03-15-220530/
 ├── issue-42.md             # Combined log for issue #42
 ├── issue-42-attempt-1.log  # Raw Claude output, attempt 1
 ├── issue-42-attempt-2.log  # Raw Claude output, attempt 2
