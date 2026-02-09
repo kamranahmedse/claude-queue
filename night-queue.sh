@@ -284,9 +284,11 @@ Closes #${issue_number}" --quiet
 
     if [ "$solved" = true ]; then
         gh issue edit "$issue_number" --add-label "$LABEL_SOLVED"
+        gh issue comment "$issue_number" --body-file "$issue_log" 2>/dev/null || true
         SOLVED_ISSUES+=("${issue_number}|${issue_title}")
     else
         gh issue edit "$issue_number" --add-label "$LABEL_FAILED"
+        gh issue comment "$issue_number" --body "night-queue failed to solve this issue after ${MAX_RETRIES} attempts." 2>/dev/null || true
         FAILED_ISSUES+=("${issue_number}|${issue_title}")
         git reset --hard "$checkpoint" --quiet 2>/dev/null || true
         git clean -fd --quiet 2>/dev/null || true
