@@ -1,0 +1,27 @@
+{
+  "name": "night-queue",
+  "version": "1.0.0",
+  "description": "Automated overnight GitHub issue solver powered by Claude Code",
+  "bin": {
+    "night-queue": "./nightshift.sh"
+  },
+  "keywords": [
+    "github",
+    "issues",
+    "automation",
+    "claude",
+    "ai",
+    "night-queue",
+    "devtools"
+  ],
+  "author": "Kamran Ahmed",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kamranahmedse/night-queue"
+  },
+  "homepage": "https://github.com/kamranahmedse/night-queue#readme",
+  "engines": {
+    "node": ">=16"
+  }
+}
