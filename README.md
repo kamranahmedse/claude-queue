@@ -1,10 +1,10 @@
 # claude-queue
 
-Automated GitHub issue solver & creator. Create well-structured issues from a text dump or interactive interview, then let Claude Code solve them overnight.
+A CLI tool that solves GitHub issues using [Claude Code](https://docs.anthropic.com/en/docs/claude-code). It picks up open issues from your repo, solves them one by one, and opens a pull request with all the fixes. It can also create well-structured GitHub issues from a text description or interactive interview.
 
-claude-queue has two modes:
-- **Solve** (default) — fetches open issues, uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to solve each one, and opens a pull request
-- **Create** — decomposes a description into well-structured GitHub issues, either from inline text or via an interactive interview
+The typical workflow is: open issues for whatever you need done, run `claude-queue`, and come back to a pull request with everything solved. I usually do this at night and review the PR in the morning.
+
+Issues don't have to be code changes — they can be investigative tasks like "figure out why the API is slow and document what you find" or "audit the codebase for accessibility issues". Claude will research, document findings, and commit whatever it produces.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ claude-queue has two modes:
 npm install -g claude-queue
 ```
 
-Or run directly with npx:
+Or run directly:
 
 ```bash
 npx claude-queue
@@ -34,17 +34,12 @@ Run from inside any git repository with GitHub issues:
 claude-queue
 ```
 
-#### Solve options
-
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--max-retries N` | `3` | Max retry attempts per issue before marking it failed |
-| `--max-turns N` | `50` | Max Claude Code turns per attempt (prevents runaway sessions) |
-| `--label LABEL` | all issues | Only process issues that have this label |
+| `--max-turns N` | `50` | Max Claude Code turns per attempt |
+| `--label LABEL` | all issues | Only process issues with this label |
 | `--model MODEL` | CLI default | Claude model to use (e.g. `claude-sonnet-4-5-20250929`) |
-| `-h, --help` | | Show help |
-
-#### Solve examples
 
 ```bash
 # Solve all open issues
@@ -59,7 +54,7 @@ claude-queue --max-retries 5 --model claude-sonnet-4-5-20250929
 
 ### Creating issues
 
-Generate well-structured GitHub issues from a text description or an interactive interview with Claude.
+Generate GitHub issues from a text description or an interactive interview with Claude.
 
 ```bash
 claude-queue create "Add dark mode and fix the login bug"
@@ -71,42 +66,31 @@ There are three ways to provide input:
 2. **Stdin** — run `claude-queue create` with no arguments, type or paste your text, then press Ctrl+D
 3. **Interactive** — run `claude-queue create -i` and Claude will ask clarifying questions before generating issues
 
-In all modes, Claude decomposes the input into individual, actionable issues with titles, markdown bodies, and labels (reusing existing repo labels where possible). You get a preview before anything is created.
-
-#### Create options
+Claude decomposes the input into individual issues with titles, markdown bodies, and labels (reusing existing repo labels where possible). You get a preview before anything is created.
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `-i, --interactive` | off | Interview mode — Claude asks clarifying questions first |
 | `--label LABEL` | none | Add this label to every created issue |
 | `--model MODEL` | CLI default | Claude model to use |
-| `-h, --help` | | Show help for create |
-
-#### Create examples
 
 ```bash
-# Create issues from a text description
-claude-queue create "Add user avatars, implement search, and fix the 404 on /settings"
-
-# Interactive mode — Claude asks questions first
+# Interactive mode
 claude-queue create -i
 
-# Paste a longer description via stdin
-claude-queue create
-
-# Add a label to all created issues (useful with --label on solve)
+# Add a label to all created issues
 claude-queue create --label backlog "Refactor the auth module and add rate limiting"
 ```
 
-### Workflow: create then solve
+### Create then solve workflow
 
-The `--label` flag on both commands lets you create a workflow where `create` plans the issues and bare `claude-queue` solves them:
+The `--label` flag on both commands lets you create a pipeline where `create` plans the issues and `claude-queue` solves them:
 
 ```bash
-# Plan: create issues tagged "nightshift"
+# Plan
 claude-queue create --label nightshift "Add dark mode and fix the login bug"
 
-# Solve: only process those issues
+# Solve
 claude-queue --label nightshift
 ```
 
@@ -120,64 +104,58 @@ Use TypeScript strict mode.
 Never modify files in the src/legacy/ directory.
 ```
 
-These instructions are appended to the prompt Claude receives for each issue. This is useful for project-specific conventions that aren't captured in `CLAUDE.md`.
+These instructions are appended to the prompt Claude receives for each issue. Useful for project-specific conventions that aren't in `CLAUDE.md`.
 
 ## How It Works
 
-### 1. Preflight
+### Preflight
 
-Verifies all dependencies are available (`gh`, `claude`, `git`, `jq`), checks that `gh` is authenticated, and ensures the git working tree is clean. Aborts immediately if anything is missing.
+Verifies all dependencies (`gh`, `claude`, `git`, `jq`), checks that `gh` is authenticated, and ensures the working tree is clean.
 
-### 2. Label Setup
+### Label setup
 
 Creates three labels on the repo (skips if they already exist):
 
-| Label | Color | Meaning |
-|-------|-------|---------|
-| `claude-queue:in-progress` | Yellow | Currently being worked on |
-| `claude-queue:solved` | Green | Successfully fixed |
-| `claude-queue:failed` | Red | Could not be solved after all retries |
+| Label | Meaning |
+|-------|---------|
+| `claude-queue:in-progress` | Currently being worked on |
+| `claude-queue:solved` | Successfully fixed |
+| `claude-queue:failed` | Could not be solved after all retries |
 
-These labels let you see at a glance which issues were handled and what the outcome was.
+### Branching
 
-### 3. Branch
+Creates a branch `claude-queue/YYYY-MM-DD` off your default branch. All fixes go into this one branch. If the branch already exists, a timestamp suffix is added.
 
-Creates a single branch `claude-queue/YYYY-MM-DD` off your default branch. All fixes for the night go into this one branch. If the branch already exists (e.g. from a previous run), a timestamp suffix is added.
-
-### 4. Issue Processing
+### Issue processing
 
 For each open issue (up to 200, oldest first):
 
-- **Skip check** — issues that already have any `claude-queue:*` label are skipped. Remove the label to re-process.
-- **Label** — marks the issue `claude-queue:in-progress`
-- **Solve** — launches a fresh Claude Code process (`claude -p`) with a prompt that tells it to:
-  - Read the issue via `gh issue view`
-  - Explore the codebase
-  - Implement a fix
-  - Run existing tests
-- **Evaluate** — if Claude produced file changes, they are committed. If not, the attempt is retried.
-- **Retry** — on failure, the working tree is reset to the last checkpoint (`git reset --hard`) and Claude gets a completely fresh context. Up to 3 attempts per issue (configurable with `--max-retries`).
-- **Label result** — marks the issue `claude-queue:solved` or `claude-queue:failed`
+1. **Skip** — issues with any `claude-queue:*` label are skipped. Remove the label to re-process.
+2. **Label** — marks the issue `claude-queue:in-progress`.
+3. **Solve** — launches Claude Code with a prompt to read the issue, explore the codebase, implement a fix, and run tests.
+4. **Evaluate** — if Claude produced file changes, they are committed. If not, the attempt is retried.
+5. **Retry** — on failure, the working tree is reset and Claude gets a fresh context. Up to 3 attempts (configurable with `--max-retries`).
+6. **Result** — marks the issue `claude-queue:solved` or `claude-queue:failed`.
 
-Each issue is solved sequentially so later fixes build on top of earlier ones — all in a single branch.
+Issues are solved sequentially so later fixes build on earlier ones within a single branch.
 
-### 5. Pull Request
+### Review pass
 
-Once all issues are processed, the branch is pushed and a PR is opened with:
+After all issues are processed, Claude does a second pass reviewing all committed changes for bugs, incomplete implementations, and style issues — fixing anything it finds.
 
-- **Summary table** — solved/failed/skipped counts and run duration
-- **Solved issues** — table of all issues that were fixed with links
-- **Failed issues** — table of issues that couldn't be solved
-- **Chain logs** — collapsible per-issue logs showing Claude's full output for each attempt
+### Pull request
 
-If no issues were solved, no PR is created.
+Once done, the branch is pushed and a PR is opened with:
 
-### Interruption Handling
+- Summary table with solved/failed/skipped counts and run duration
+- Tables of solved and failed issues with links
+- Collapsible per-issue logs showing Claude's full output
 
-If the script is interrupted (Ctrl+C, SIGTERM), it:
-- Removes the `claude-queue:in-progress` label from the current issue
-- Marks it as `claude-queue:failed`
-- Prints where your commits and logs are so nothing is lost
+No PR is created if nothing was solved.
+
+### Interruption handling
+
+If interrupted (Ctrl+C, SIGTERM), the script removes the `claude-queue:in-progress` label from the current issue, marks it as failed, and prints where your commits and logs are.
 
 ## Logs
 
@@ -190,7 +168,7 @@ Full logs for each run are saved to `/tmp/claude-queue-DATE-TIMESTAMP/`:
 ├── issue-42-attempt-2.log  # Raw Claude output, attempt 2
 ├── issue-57.md
 ├── issue-57-attempt-1.log
-└── pr-body.md              # The generated PR description
+└── pr-body.md              # Generated PR description
 ```
 
 ## License
