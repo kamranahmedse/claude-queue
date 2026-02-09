@@ -199,6 +199,14 @@ process_issue() {
         echo "## Attempt ${attempt}" >> "$issue_log"
         echo "" >> "$issue_log"
 
+        local custom_instructions=""
+        if [ -f ".night-queue" ]; then
+            custom_instructions="
+
+Additional project-specific instructions:
+$(cat .night-queue)"
+        fi
+
         local prompt
         prompt="You are an automated assistant solving a GitHub issue in this repository.
 
@@ -216,7 +224,7 @@ Rules:
 - Do NOT push anything
 - Match the existing code style exactly
 - Only change what is necessary to solve the issue
-
+${custom_instructions}
 When you are done, output a line that says NIGHT_QUEUE_SUMMARY followed by a 2-3 sentence
 description of what you changed and why."
 

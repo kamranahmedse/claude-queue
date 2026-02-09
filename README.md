@@ -53,6 +53,18 @@ night-queue --label bug
 night-queue --max-retries 5 --model claude-sonnet-4-5-20250929
 ```
 
+## Configuration
+
+Create a `.night-queue` file in your repo root to add custom instructions to every issue prompt:
+
+```
+Always run `npm test` after making changes.
+Use TypeScript strict mode.
+Never modify files in the src/legacy/ directory.
+```
+
+These instructions are appended to the prompt Claude receives for each issue. This is useful for project-specific conventions that aren't captured in `CLAUDE.md`.
+
 ## How It Works
 
 ### 1. Preflight
