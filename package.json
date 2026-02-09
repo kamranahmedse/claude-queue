@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "Automated overnight GitHub issue solver powered by Claude Code",
   "bin": {
-    "night-queue": "./nightshift.sh"
+    "night-queue": "./night-queue.sh"
   },
   "keywords": [
     "github",
