@@ -20,9 +20,6 @@ set -euo pipefail
 
 VERSION=$(node -p "require('$(dirname "$0")/package.json').version" 2>/dev/null || echo "unknown")
 
-# ─────────────────────────────────────────────────────────────
-# Configuration
-# ─────────────────────────────────────────────────────────────
 MAX_RETRIES=3
 MAX_TURNS=50
 ISSUE_FILTER=""
@@ -36,9 +33,6 @@ LABEL_PROGRESS="night-queue:in-progress"
 LABEL_SOLVED="night-queue:solved"
 LABEL_FAILED="night-queue:failed"
 
-# ─────────────────────────────────────────────────────────────
-# Terminal colors
-# ─────────────────────────────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -47,18 +41,12 @@ DIM='\033[2m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# ─────────────────────────────────────────────────────────────
-# State
-# ─────────────────────────────────────────────────────────────
 declare -a SOLVED_ISSUES=()
 declare -a FAILED_ISSUES=()
 declare -a SKIPPED_ISSUES=()
 CURRENT_ISSUE=""
 START_TIME=$(date +%s)
 
-# ─────────────────────────────────────────────────────────────
-# Parse arguments
-# ─────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case $1 in
         --max-retries) MAX_RETRIES="$2"; shift 2 ;;
@@ -71,18 +59,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ─────────────────────────────────────────────────────────────
-# Logging
-# ─────────────────────────────────────────────────────────────
 log()         { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${BLUE}[night-queue]${NC} $1"; }
 log_success() { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${GREEN}[night-queue]${NC} $1"; }
 log_warn()    { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${YELLOW}[night-queue]${NC} $1"; }
 log_error()   { echo -e "${DIM}$(date +%H:%M:%S)${NC} ${RED}[night-queue]${NC} $1"; }
 log_header()  { echo -e "\n${BOLD}═══ $1 ═══${NC}\n"; }
 
-# ─────────────────────────────────────────────────────────────
-# Cleanup on exit / interrupt
-# ─────────────────────────────────────────────────────────────
 cleanup() {
     local exit_code=$?
 
@@ -101,9 +83,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# ─────────────────────────────────────────────────────────────
-# Preflight checks
-# ─────────────────────────────────────────────────────────────
 preflight() {
     log_header "Preflight Checks"
 
@@ -148,9 +127,6 @@ preflight() {
     log "  log dir ... ${LOG_DIR}"
 }
 
-# ─────────────────────────────────────────────────────────────
-# Ensure GitHub labels exist
-# ─────────────────────────────────────────────────────────────
 ensure_labels() {
     log "Creating labels (if missing)..."
 
@@ -159,9 +135,6 @@ ensure_labels() {
     gh label create "$LABEL_FAILED"   --color "d93f0b" --description "night-queue could not solve this" --force 2>/dev/null || true
 }
 
-# ─────────────────────────────────────────────────────────────
-# Create the night-queue branch off the default branch
-# ─────────────────────────────────────────────────────────────
 setup_branch() {
     log_header "Branch Setup"
 
@@ -180,9 +153,6 @@ setup_branch() {
     log_success "Created branch: ${BRANCH}"
 }
 
-# ─────────────────────────────────────────────────────────────
-# Fetch open issues from GitHub
-# ─────────────────────────────────────────────────────────────
 fetch_issues() {
     local args=(--state open --json "number,title,body,labels" --limit 200)
 
@@ -193,9 +163,6 @@ fetch_issues() {
     gh issue list "${args[@]}"
 }
 
-# ─────────────────────────────────────────────────────────────
-# Process a single issue (with retries)
-# ─────────────────────────────────────────────────────────────
 process_issue() {
     local issue_number=$1
     local issue_title="$2"
@@ -256,7 +223,6 @@ description of what you changed and why."
         local attempt_log="${LOG_DIR}/issue-${issue_number}-attempt-${attempt}.log"
         local claude_exit=0
 
-        # Run Claude with fresh context (new process = fresh context)
         # shellcheck disable=SC2086
         claude -p "$prompt" \
             --dangerously-skip-permissions \
@@ -329,9 +295,6 @@ Closes #${issue_number}" --quiet
     CURRENT_ISSUE=""
 }
 
-# ─────────────────────────────────────────────────────────────
-# Build PR body and create the pull request
-# ─────────────────────────────────────────────────────────────
 create_pr() {
     log_header "Creating Pull Request"
 
@@ -405,7 +368,6 @@ create_pr() {
         done
     } > "$pr_body"
 
-    # Truncate the entire body if it's too large for GitHub (max ~65000 chars)
     local body_size
     body_size=$(wc -c < "$pr_body")
     if [ "$body_size" -gt 60000 ]; then
@@ -433,9 +395,6 @@ create_pr() {
     log_success "Pull request created: ${pr_url}"
 }
 
-# ─────────────────────────────────────────────────────────────
-# Main
-# ─────────────────────────────────────────────────────────────
 main() {
     echo -e "${BOLD}"
     echo '        _       _     _                                  '
