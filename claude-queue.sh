@@ -49,6 +49,7 @@ declare -a SOLVED_ISSUES=()
 declare -a FAILED_ISSUES=()
 declare -a SKIPPED_ISSUES=()
 CURRENT_ISSUE=""
+CHILD_PID=""
 START_TIME=$(date +%s)
 
 show_help() {
@@ -108,6 +109,17 @@ cleanup() {
         log "Logs saved to: ${LOG_DIR}"
     fi
 }
+
+handle_interrupt() {
+    if [ -n "$CHILD_PID" ] && kill -0 "$CHILD_PID" 2>/dev/null; then
+        kill -TERM "$CHILD_PID" 2>/dev/null || true
+        wait "$CHILD_PID" 2>/dev/null || true
+    fi
+    CHILD_PID=""
+    exit 130
+}
+
+trap handle_interrupt INT TERM
 trap cleanup EXIT
 
 preflight() {
@@ -267,7 +279,10 @@ description of what you changed and why."
             --dangerously-skip-permissions \
             --max-turns "$MAX_TURNS" \
             $MODEL_FLAG \
-            > "$attempt_log" 2>&1 || claude_exit=$?
+            > "$attempt_log" 2>&1 &
+        CHILD_PID=$!
+        wait "$CHILD_PID" || claude_exit=$?
+        CHILD_PID=""
 
         if [ "$claude_exit" -ne 0 ]; then
             log_warn "Claude exited with code ${claude_exit}"
@@ -377,7 +392,10 @@ When you are done, output a line that says CLAUDE_QUEUE_REVIEW followed by a bri
         --dangerously-skip-permissions \
         --max-turns "$MAX_TURNS" \
         $MODEL_FLAG \
-        > "$review_log" 2>&1 || true
+        > "$review_log" 2>&1 &
+    CHILD_PID=$!
+    wait "$CHILD_PID" 2>/dev/null || true
+    CHILD_PID=""
 
     local changed_files
     changed_files=$(git diff --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null)
